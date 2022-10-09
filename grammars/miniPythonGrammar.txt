@@ -7,8 +7,8 @@ argument: WORD ("=" SIGNED_NUMBER )? ( "," WORD ("=" SIGNED_NUMBER )?)*
 statement: "if" comparison ":" statement                                    -> if
     | "for" WORD "in" WORD ":" statement                                    -> for
     | "return" expression                                                   -> return
-    | WORD "=" expression                                                   -> assignment
-    | WORD "[" expression "]" "=" expression
+    | WORD "=" expression                                                   -> variable_assignment
+    | WORD "[" expression "]" "=" expression                                -> array_assignment
     | function_call                                                         -> call
 
 sum: sum "+" term                                                           -> add

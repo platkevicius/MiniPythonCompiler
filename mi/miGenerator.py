@@ -2,7 +2,7 @@ from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
 
 
-def generateMi(goals):
+def generateMachineCode(goals):
     print(generateInit())
     for goal in goals:
         generate(goal)
@@ -32,7 +32,7 @@ def generateBinaryOp(binary_op):
         case '/':
             print('DIV W !SP, 4+!SP')
 
-    # reset SP based on BinaryOp
+    # stack value has been merged into previous with given BinaryOp
     print('ADD W I 4, SP')
 
 

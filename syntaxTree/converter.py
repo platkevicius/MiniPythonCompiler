@@ -28,3 +28,5 @@ def parse_tree_to_ast(e):
         return parse_tree_to_ast(e.children[0])
     elif e.data == 'primary':
         return parse_tree_to_ast(e.children[0])
+    elif e.data == 'grouping':
+        return parse_tree_to_ast(e.children[0])

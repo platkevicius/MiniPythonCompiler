@@ -24,8 +24,10 @@ script_file = open(filename)
 parse_tree = language_parser.parse(script_file.read())
 script_file.close()
 
+print(parse_tree.pretty())
+
 # generate syntaxTree from parse tree
 ast = converter.parse_tree_to_ast(parse_tree)
 
 # code generation for target architecture (MI / RISC-V)
-miGenerator.generateMi(ast)
+miGenerator.generateMachineCode(ast)

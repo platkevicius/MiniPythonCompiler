@@ -12,10 +12,10 @@ factor: "-" factor                                                          -> n
     | primary                                                               -> primary
 
 primary: SIGNED_NUMBER                                                      -> number
-         | WORD                                                             -> word
+         | WORD                                                             -> variable
          | WORD "[" sum "]"                                                 -> array_indexing
          | "["SIGNED_NUMBER ( "," SIGNED_NUMBER)*"]"                        -> array_indexing_multi
-
+         | "(" sum* ")"                                                     -> grouping
 
 %import common.WORD
 %import common.SIGNED_NUMBER
