@@ -1,0 +1,23 @@
+goal: sum*
+
+sum: sum "+" term                                                           -> add
+    | sum "-" term                                                          -> minus
+    | term                                                                  -> term
+
+term: term "*" factor                                                       -> mult
+    | term "/" factor                                                       -> div
+    | factor                                                                -> factor
+
+factor: "-" factor                                                          -> neg
+    | primary                                                               -> primary
+
+primary: SIGNED_NUMBER                                                      -> number
+         | WORD                                                             -> word
+         | WORD "[" sum "]"                                                 -> array_indexing
+         | "["SIGNED_NUMBER ( "," SIGNED_NUMBER)*"]"                        -> array_indexing_multi
+
+
+%import common.WORD
+%import common.SIGNED_NUMBER
+%import common.WS
+%ignore WS

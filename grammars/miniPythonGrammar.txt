@@ -1,0 +1,45 @@
+goal: (function | statement)*
+
+function: "def" WORD "(" argument? ")" ":"
+
+argument: WORD ("=" SIGNED_NUMBER )? ( "," WORD ("=" SIGNED_NUMBER )?)*
+
+statement: "if" comparison ":" statement                                    -> if
+    | "for" WORD "in" WORD ":" statement                                    -> for
+    | "return" expression                                                   -> return
+    | WORD "=" expression                                                   -> assignment
+    | WORD "[" expression "]" "=" expression
+    | function_call                                                         -> call
+
+sum: sum "+" term                                                           -> add
+    | sum "-" term                                                          -> minus
+    | term                                                                  -> term
+
+term: term "*" factor                                                       -> mult
+    | term "/" factor                                                       -> div
+    | factor                                                                -> factor
+
+factor: "-" factor                                                          -> neg
+    | primary                                                               -> primary
+
+primary: SIGNED_NUMBER                                                      -> number
+         | WORD                                                             -> word
+         | WORD "[" sum "]"                                                 -> array_indexing
+         | "["SIGNED_NUMBER ( "," SIGNED_NUMBER)*"]"                        -> array_indexing_multi
+
+comparison: expression ">" expression                                       -> greater
+    | expression ">=" expression                                            -> greater_equals
+    | expression "<" expression                                             -> less
+    | expression "<=" expression                                            -> less_equals
+    | expression "==" expression                                            -> equals
+    | "true"
+    | "false"
+
+function_call: WORD "(" arg_list? ")"
+
+arg_list: expression ( "," expression )*
+
+%import common.WORD
+%import common.SIGNED_NUMBER
+%import common.WS
+%ignore WS
