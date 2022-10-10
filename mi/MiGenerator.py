@@ -1,3 +1,4 @@
+from syntaxTree.expression.VariableNode import VariableNode
 from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
 from syntaxTree.statement.VariableCreation import VariableCreation
@@ -19,6 +20,8 @@ def generate(ast):
         generateBinaryOp(ast)
     elif type(ast) is Constant:
         generateConstant(ast)
+    elif type(ast) is VariableNode:
+        generateResolveVariable(ast)
 
 
 def generateVariableCreation(variable_creation):
@@ -29,7 +32,8 @@ def generateVariableCreation(variable_creation):
     if variable.in_register:
         print('MOVE W !SP, R' + str(variable.location))
     else:
-        print('MOVE W !SP, ' + str((variable.location * 4)) + '+!heap')
+        print('MOVE W !SP, ' + str((variable.location * 4)) + '+!hp')
+        print('ADD W I 4, !hp')
 
 
 def generateBinaryOp(binary_op):
@@ -55,8 +59,13 @@ def generateConstant(constant):
     print('MOVE W I ' + str(constant.value) + ', -!SP')
 
 
-def generateVariableForArithmetics(variable):
-    pass
+def generateResolveVariable(variable):
+    variableLocation = findVariableLocation(variable.name)
+
+    if variableLocation.in_register:
+        print('MOVE W R' + str(variableLocation.location) + ', -!SP')
+    else:
+        print('MOVE W ' + str(variableLocation.location * 4) + '+!heap, -!SP')
 
 
 def generateInit():
