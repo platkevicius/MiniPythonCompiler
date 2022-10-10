@@ -13,30 +13,37 @@ statement: "if" comparison ":" statement*                                    -> 
     | WORD "[" sum "]" "=" sum                                               -> array_assignment
     | function_call                                                          -> call
 
-sum: sum "+" term                                                            -> add
-    | sum "-" term                                                           -> minus
-    | term                                                                   -> term
+disjunction: conjunction ("or" conjunction)+                                -> or
+    | conjunction                                                           -> conjunction
 
-term: term "*" factor                                                        -> mult
-    | term "/" factor                                                        -> div
-    | factor                                                                 -> factor
+conjunction: comparison ("and" comparison)+                                 -> and
+    | comparison                                                            -> comparison
 
-factor: "-" factor                                                           -> neg
-    | primary                                                                -> primary
+comparison: sum "<=" sum                                                    -> less_equals
+    | sum "<" sum                                                           -> less
+    | sum ">=" sum                                                          -> greater_equals
+    | sum ">" sum                                                           -> greater
+    | sum "!=" sum                                                          -> not_equals
+    | sum "==" sum                                                          -> equals
+    | "true"                                                                -> true
+    | "false"                                                               -> false
 
-primary: SIGNED_NUMBER                                                       -> number
-         | WORD                                                              -> variable
-         | WORD "[" sum "]"                                                  -> array_indexing
-         | "["SIGNED_NUMBER ( "," SIGNED_NUMBER)*"]"                         -> array_indexing_multi
-         | "(" sum* ")"                                                      -> grouping
+sum: sum "+" term                                                           -> add
+    | sum "-" term                                                          -> minus
+    | term                                                                  -> term
 
-comparison: sum ">" sum                                                      -> greater
-    | sum ">=" sum                                                           -> greater_equals
-    | sum "<" sum                                                            -> less
-    | sum "<=" sum                                                           -> less_equals
-    | sum "==" sum                                                           -> equals
-    | "true"
-    | "false"
+term: term "*" factor                                                       -> mult
+    | term "/" factor                                                       -> div
+    | factor                                                                -> factor
+
+factor: "-" factor                                                          -> neg
+    | primary                                                               -> primary
+
+primary: SIGNED_NUMBER                                                      -> number
+         | WORD                                                             -> variable
+         | WORD "[" sum "]"                                                 -> array_indexing
+         | "["SIGNED_NUMBER ( "," SIGNED_NUMBER)*"]"                        -> array_indexing_multi
+         | "(" sum* ")"                                                     -> grouping
 
 function_call: WORD "(" arg_list? ")"
 

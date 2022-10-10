@@ -25,6 +25,30 @@ def parse_tree_to_ast(e):
     elif e.data == 'div':
         e1, e2 = e.children
         return BinaryOp(parse_tree_to_ast(e1), '/', parse_tree_to_ast(e2))
+    elif e.data == 'or':
+        e1, e2 = e.children
+        return BinaryOp(parse_tree_to_ast(e1), 'or', parse_tree_to_ast(e2))
+    elif e.data == 'and':
+        e1, e2 = e.children
+        return BinaryOp(parse_tree_to_ast(e1), 'and', parse_tree_to_ast(e2))
+    elif e.data == 'greater':
+        e1, e2 = e.children
+        return BinaryOp(parse_tree_to_ast(e1), '>', parse_tree_to_ast(e2))
+    elif e.data == 'greater_equals':
+        e1, e2 = e.children
+        return BinaryOp(parse_tree_to_ast(e1), '>=', parse_tree_to_ast(e2))
+    elif e.data == 'equals':
+        e1, e2 = e.children
+        return BinaryOp(parse_tree_to_ast(e1), '==', parse_tree_to_ast(e2))
+    elif e.data == 'less':
+        e1, e2 = e.children
+        return BinaryOp(parse_tree_to_ast(e1), '<', parse_tree_to_ast(e2))
+    elif e.data == 'less_equals':
+        e1, e2 = e.children
+        return BinaryOp(parse_tree_to_ast(e1), '<=', parse_tree_to_ast(e2))
+    elif e.data == 'not_equals':
+        e1, e2 = e.children
+        return BinaryOp(parse_tree_to_ast(e1), '!=', parse_tree_to_ast(e2))
     elif e.data == 'term':
         return parse_tree_to_ast(e.children[0])
     elif e.data == 'factor':
@@ -32,6 +56,10 @@ def parse_tree_to_ast(e):
     elif e.data == 'primary':
         return parse_tree_to_ast(e.children[0])
     elif e.data == 'grouping':
+        return parse_tree_to_ast(e.children[0])
+    elif e.data == 'comparison':
+        return parse_tree_to_ast(e.children[0])
+    elif e.data == 'conjunction':
         return parse_tree_to_ast(e.children[0])
     elif e.data == 'variable_creation':
         name, expr = e.children

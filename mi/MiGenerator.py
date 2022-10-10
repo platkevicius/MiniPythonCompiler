@@ -54,6 +54,7 @@ def generateVariableAssignment(variable_assignment):
 
         print('MOVE W !SP, !R13')
 
+
 def generateBinaryOp(binary_op):
     generate(binary_op.left)
     generate(binary_op.right)

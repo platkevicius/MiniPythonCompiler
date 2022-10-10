@@ -1,4 +1,19 @@
-goal: sum*
+goal: disjunction*
+
+disjunction: disjunction "or" conjunction                                   -> or
+    | conjunction                                                           -> conjunction
+
+conjunction: conjunction "and" comparison                                   -> and
+    | comparison                                                            -> comparison
+
+comparison: sum "<=" sum                                                    -> less_equals
+    | sum "<" sum                                                           -> less
+    | sum ">=" sum                                                          -> greater_equals
+    | sum ">" sum                                                           -> greater
+    | sum "!=" sum                                                          -> not_equals
+    | sum "==" sum                                                          -> equals
+    | "true"                                                                -> true
+    | "false"                                                               -> false
 
 sum: sum "+" term                                                           -> add
     | sum "-" term                                                          -> minus
@@ -11,13 +26,13 @@ term: term "*" factor                                                       -> m
 factor: "-" factor                                                          -> neg
     | primary                                                               -> primary
 
-primary: SIGNED_NUMBER                                                      -> number
-         | WORD                                                             -> variable
-         | WORD "[" sum "]"                                                 -> array_indexing
-         | "["SIGNED_NUMBER ( "," SIGNED_NUMBER)*"]"                        -> array_indexing_multi
-         | "(" sum* ")"                                                     -> grouping
+primary: NUMBER                                                             -> number
+    | WORD                                                                  -> variable
+    | WORD "[" sum "]"                                                      -> array_indexing
+    | "["NUMBER ( "," NUMBER)*"]"                                           -> array_indexing_multi
+    | "(" sum* ")"                                                          -> grouping
 
 %import common.WORD
-%import common.SIGNED_NUMBER
+%import common.NUMBER
 %import common.WS
 %ignore WS
