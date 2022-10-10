@@ -1,6 +1,7 @@
 from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
 from syntaxTree.expression.VariableNode import VariableNode
+from syntaxTree.statement.VariableAssignment import VariableAssignment
 from syntaxTree.statement.VariableCreation import VariableCreation
 
 
@@ -35,5 +36,8 @@ def parse_tree_to_ast(e):
     elif e.data == 'variable_creation':
         name, expr = e.children
         return VariableCreation(name, parse_tree_to_ast(expr))
+    elif e.data == 'variable_assignment':
+        name, expr = e.children
+        return VariableAssignment(name, parse_tree_to_ast(expr))
     elif e.data == 'variable':
         return VariableNode(e.children[0].value)

@@ -1,6 +1,7 @@
 from syntaxTree.expression.VariableNode import VariableNode
 from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
+from syntaxTree.statement.VariableAssignment import VariableAssignment
 from syntaxTree.statement.VariableCreation import VariableCreation
 from mi.VariableAllocator import *
 
@@ -16,6 +17,8 @@ def generateMachineCode(goals):
 def generate(ast):
     if type(ast) is VariableCreation:
         generateVariableCreation(ast)
+    if type(ast) is VariableAssignment:
+        generateVariableAssignment(ast)
     elif type(ast) is BinaryOp:
         generateBinaryOp(ast)
     elif type(ast) is Constant:
@@ -37,6 +40,19 @@ def generateVariableCreation(variable_creation):
 
         print('MOVE W !SP, !R13')
 
+
+def generateVariableAssignment(variable_assignment):
+    name = variable_assignment.name
+    generate(variable_assignment.value)
+    variable = findVariableLocation(name)
+
+    if variable.in_register:
+        print('MOVE W !SP, R' + str(variable.location))
+    else:
+        print('MOVE W hp, R13')
+        print('ADD W I 4, hp')
+
+        print('MOVE W !SP, !R13')
 
 def generateBinaryOp(binary_op):
     generate(binary_op.left)

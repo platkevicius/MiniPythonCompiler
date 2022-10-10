@@ -1,6 +1,6 @@
-# globals to keep track of variables in register and heap
 from mi.Variable import Variable
 
+# globals to keep track of variables in register and heap
 variablesInRegister = 0
 variablesInHeap = 0
 
@@ -17,11 +17,11 @@ def addVariable(name):
     if variablesInRegister != 13:
         register[name] = variablesInRegister
         variablesInRegister += 1
-        return Variable(name, variablesInRegister-1, True)
+        return Variable(name, variablesInRegister - 1, True)
     else:
         heap[name] = variablesInHeap
         variablesInHeap += 1
-        return Variable(name, variablesInHeap-1, False)
+        return Variable(name, variablesInHeap - 1, False)
 
 
 def findVariableLocation(name):
