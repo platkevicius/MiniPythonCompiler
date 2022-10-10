@@ -1,0 +1,9 @@
+Min:
+control flow: if, for, while
+records
+arrays 1D, multi dimensional
+
+integer, float, boolean
+
+Additional:
+Functions

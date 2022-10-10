@@ -1,10 +1,10 @@
 from lark import Lark
 from argparse import ArgumentParser
-from syntaxTree import converter
-from mi import miGenerator
+from syntaxTree import Converter
+from mi import MiGenerator
 
 # read grammar from file
-grammar_file = open("grammars/expressionGrammar.txt")
+grammar_file = open("grammars/miniPythonGrammar.txt")
 grammar = grammar_file.read()
 grammar_file.close()
 
@@ -27,7 +27,7 @@ script_file.close()
 print(parse_tree.pretty())
 
 # generate syntaxTree from parse tree
-ast = converter.parse_tree_to_ast(parse_tree)
+ast = Converter.parse_tree_to_ast(parse_tree)
 
 # code generation for target architecture (MI / RISC-V)
-miGenerator.generateMachineCode(ast)
+MiGenerator.generateMachineCode(ast)

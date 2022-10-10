@@ -1,43 +1,46 @@
 goal: (function | statement)*
 
-function: "def" WORD "(" argument? ")" ":"
+function: "def" WORD "(" argument? ")" ":" statement*
 
 argument: WORD ("=" SIGNED_NUMBER )? ( "," WORD ("=" SIGNED_NUMBER )?)*
 
-statement: "if" comparison ":" statement                                    -> if
-    | "for" WORD "in" WORD ":" statement                                    -> for
-    | "return" expression                                                   -> return
-    | WORD "=" expression                                                   -> variable_assignment
-    | WORD "[" expression "]" "=" expression                                -> array_assignment
-    | function_call                                                         -> call
+statement: "if" comparison ":" statement*                                    -> if
+    | "while" comparison ":" statement*                                      -> while
+    | "for" WORD "in" WORD ":" statement*                                    -> for
+    | "return" sum                                                           -> return
+    | WORD "=" sum                                                           -> variable_assignment
+    | "var" WORD "=" sum                                                     -> variable_creation
+    | WORD "[" sum "]" "=" sum                                               -> array_assignment
+    | function_call                                                          -> call
 
-sum: sum "+" term                                                           -> add
-    | sum "-" term                                                          -> minus
-    | term                                                                  -> term
+sum: sum "+" term                                                            -> add
+    | sum "-" term                                                           -> minus
+    | term                                                                   -> term
 
-term: term "*" factor                                                       -> mult
-    | term "/" factor                                                       -> div
-    | factor                                                                -> factor
+term: term "*" factor                                                        -> mult
+    | term "/" factor                                                        -> div
+    | factor                                                                 -> factor
 
-factor: "-" factor                                                          -> neg
-    | primary                                                               -> primary
+factor: "-" factor                                                           -> neg
+    | primary                                                                -> primary
 
-primary: SIGNED_NUMBER                                                      -> number
-         | WORD                                                             -> word
-         | WORD "[" sum "]"                                                 -> array_indexing
-         | "["SIGNED_NUMBER ( "," SIGNED_NUMBER)*"]"                        -> array_indexing_multi
+primary: SIGNED_NUMBER                                                       -> number
+         | WORD                                                              -> variable
+         | WORD "[" sum "]"                                                  -> array_indexing
+         | "["SIGNED_NUMBER ( "," SIGNED_NUMBER)*"]"                         -> array_indexing_multi
+         | "(" sum* ")"                                                      -> grouping
 
-comparison: expression ">" expression                                       -> greater
-    | expression ">=" expression                                            -> greater_equals
-    | expression "<" expression                                             -> less
-    | expression "<=" expression                                            -> less_equals
-    | expression "==" expression                                            -> equals
+comparison: sum ">" sum                                                      -> greater
+    | sum ">=" sum                                                           -> greater_equals
+    | sum "<" sum                                                            -> less
+    | sum "<=" sum                                                           -> less_equals
+    | sum "==" sum                                                           -> equals
     | "true"
     | "false"
 
 function_call: WORD "(" arg_list? ")"
 
-arg_list: expression ( "," expression )*
+arg_list: sum ( "," sum )*
 
 %import common.WORD
 %import common.SIGNED_NUMBER

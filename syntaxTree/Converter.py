@@ -1,5 +1,6 @@
 from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
+from syntaxTree.statement.VariableCreation import VariableCreation
 
 
 def parse_tree_to_ast(e):
@@ -30,3 +31,6 @@ def parse_tree_to_ast(e):
         return parse_tree_to_ast(e.children[0])
     elif e.data == 'grouping':
         return parse_tree_to_ast(e.children[0])
+    elif e.data == 'variable_creation':
+        name, expr = e.children
+        return VariableCreation(name, parse_tree_to_ast(expr))
