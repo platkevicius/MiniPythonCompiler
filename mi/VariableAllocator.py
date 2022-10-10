@@ -2,7 +2,7 @@
 from mi.Variable import Variable
 
 variablesInRegister = 0
-variablesInHeap = 1
+variablesInHeap = 0
 
 register = {}
 heap = {}

@@ -32,8 +32,10 @@ def generateVariableCreation(variable_creation):
     if variable.in_register:
         print('MOVE W !SP, R' + str(variable.location))
     else:
-        print('MOVE W !SP, ' + str((variable.location * 4)) + '+!hp')
-        print('ADD W I 4, !hp')
+        print('MOVE W hp, R13')
+        print('ADD W I 4, hp')
+
+        print('MOVE W !SP, !R13')
 
 
 def generateBinaryOp(binary_op):
@@ -65,7 +67,8 @@ def generateResolveVariable(variable):
     if variableLocation.in_register:
         print('MOVE W R' + str(variableLocation.location) + ', -!SP')
     else:
-        print('MOVE W ' + str(variableLocation.location * 4) + '+!heap, -!SP')
+        print ('MOVEA heap, R13')
+        print('MOVE W ' + str(variableLocation.location * 4) + '+!R13, -!SP')
 
 
 def generateInit():

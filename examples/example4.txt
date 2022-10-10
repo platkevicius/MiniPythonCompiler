@@ -1,3 +1,15 @@
 var a = 100 + 5 + 6 - 10
 var b = a * 5
 var c = a * b
+var d = 1
+var e = 2
+var f = 3
+var g = 4
+var h = 5
+var i = 6
+var j = 7
+var k = 8
+var l = 9
+var m = 10
+var heap = 1
+var heapAddition = heap + 1
