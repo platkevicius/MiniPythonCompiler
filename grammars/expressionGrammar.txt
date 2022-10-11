@@ -12,6 +12,7 @@ comparison: sum "<=" sum                                                    -> l
     | sum ">" sum                                                           -> greater
     | sum "!=" sum                                                          -> not_equals
     | sum "==" sum                                                          -> equals
+    | "(" disjunction ")"                                                   -> grouping
     | "true"                                                                -> true
     | "false"                                                               -> false
 
@@ -30,7 +31,7 @@ primary: NUMBER                                                             -> n
     | WORD                                                                  -> variable
     | WORD "[" sum "]"                                                      -> array_indexing
     | "["NUMBER ( "," NUMBER)*"]"                                           -> array_indexing_multi
-    | "(" sum* ")"                                                          -> grouping
+    | "(" sum ")"                                                           -> grouping
 
 %import common.WORD
 %import common.NUMBER
