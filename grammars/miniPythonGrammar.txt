@@ -4,19 +4,19 @@ function: "def" WORD "(" argument? ")" ":" statement*
 
 argument: WORD ("=" SIGNED_NUMBER )? ( "," WORD ("=" SIGNED_NUMBER )?)*
 
-statement: "if" comparison ":" statement*                                    -> if
-    | "while" comparison ":" statement*                                      -> while
+statement: "if" disjunction ":" statement*                                   -> if
+    | "while" disjunction ":" statement*                                     -> while
     | "for" WORD "in" WORD ":" statement*                                    -> for
-    | "return" sum                                                           -> return
-    | WORD "=" sum                                                           -> variable_assignment
-    | "var" WORD "=" sum                                                     -> variable_creation
-    | WORD "[" sum "]" "=" sum                                               -> array_assignment
+    | "return" disjunction                                                   -> return
+    | WORD "=" disjunction                                                   -> variable_assignment
+    | "var" WORD "=" disjunction                                             -> variable_creation
+    | WORD "[" sum "]" "=" disjunction                                       -> array_assignment
     | function_call                                                          -> call
 
-disjunction: conjunction ("or" conjunction)+                                -> or
+disjunction: disjunction "or" conjunction                                   -> or
     | conjunction                                                           -> conjunction
 
-conjunction: comparison ("and" comparison)+                                 -> and
+conjunction: conjunction "and" comparison                                   -> and
     | comparison                                                            -> comparison
 
 comparison: sum "<=" sum                                                    -> less_equals
@@ -25,8 +25,10 @@ comparison: sum "<=" sum                                                    -> l
     | sum ">" sum                                                           -> greater
     | sum "!=" sum                                                          -> not_equals
     | sum "==" sum                                                          -> equals
+    | "(" disjunction ")"                                                   -> grouping
     | "true"                                                                -> true
     | "false"                                                               -> false
+    | sum                                                                   -> sum
 
 sum: sum "+" term                                                           -> add
     | sum "-" term                                                          -> minus
@@ -43,7 +45,7 @@ primary: SIGNED_NUMBER                                                      -> n
          | WORD                                                             -> variable
          | WORD "[" sum "]"                                                 -> array_indexing
          | "["SIGNED_NUMBER ( "," SIGNED_NUMBER)*"]"                        -> array_indexing_multi
-         | "(" sum* ")"                                                     -> grouping
+         | "(" sum ")"                                                     -> grouping
 
 function_call: WORD "(" arg_list? ")"
 

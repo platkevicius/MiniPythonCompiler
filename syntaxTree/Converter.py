@@ -69,3 +69,5 @@ def parse_tree_to_ast(e):
         return VariableAssignment(name, parse_tree_to_ast(expr))
     elif e.data == 'variable':
         return VariableNode(e.children[0].value)
+    elif e.data == 'sum':
+        return parse_tree_to_ast(e.children[0])

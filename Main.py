@@ -4,7 +4,7 @@ from syntaxTree import Converter
 from mi import MiGenerator
 
 # read grammar from file
-grammar_file = open("grammars/expressionGrammar.txt")
+grammar_file = open("grammars/miniPythonGrammar.txt")
 grammar = grammar_file.read()
 grammar_file.close()
 

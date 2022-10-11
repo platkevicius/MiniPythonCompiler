@@ -4,6 +4,7 @@ from syntaxTree.expression.Constant import Constant
 from syntaxTree.statement.VariableAssignment import VariableAssignment
 from syntaxTree.statement.VariableCreation import VariableCreation
 from mi.VariableAllocator import *
+from mi.SymbolGenerator import createNewSymbol
 
 
 def generateMachineCode(goals):
@@ -63,15 +64,54 @@ def generateBinaryOp(binary_op):
     match op:
         case '+':
             print('ADD W !SP, 4+!SP')
+            print('ADD W I 4, SP')
         case '-':
             print('SUB W !SP, 4+!SP')
+            print('ADD W I 4, SP')
         case '*':
             print('MULT W !SP, 4+!SP')
+            print('ADD W I 4, SP')
         case '/':
             print('DIV W !SP, 4+!SP')
+            print('ADD W I 4, SP')
+        case '>':
+            generateComparison('>')
+        case '>=':
+            generateComparison('>=')
+        case '==':
+            generateComparison('==')
+        case '<=':
+            generateComparison('<=')
+        case '<':
+            generateComparison('<')
+        case 'or':
+            print('OR W !SP, 4+!SP')
+            print('ADD W I 4, SP')
+        case 'and':
+            print('MULT W !SP, 4+!SP')
+            print('ADD W I 4, SP')
 
-    # stack value has been merged into previous with given BinaryOp
+
+def generateComparison(op):
+    mappings = {">": "JGT",
+                ">=": "JGE",
+                "==": "JEQ",
+                "<=": "JLE",
+                "<": "JLE"}
+    symbol = createNewSymbol('logicalTrue')
+    symbol_continue = createNewSymbol('continue')
+
+    print('SUB W !SP, 4+!SP')
     print('ADD W I 4, SP')
+    print('CMP W !SP, I 0')
+    print(mappings.get(op) + ' ' + symbol)
+    print('MOVE W I 0, !SP')
+    print('JUMP ' + symbol_continue)
+    print('')
+    print(symbol + ':')
+    print('MOVE W I 1, !SP')
+    print('')
+    print(symbol_continue + ':')
 
 
 def generateConstant(constant):
@@ -84,7 +124,7 @@ def generateResolveVariable(variable):
     if variableLocation.in_register:
         print('MOVE W R' + str(variableLocation.location) + ', -!SP')
     else:
-        print ('MOVEA heap, R13')
+        print('MOVEA heap, R13')
         print('MOVE W ' + str(variableLocation.location * 4) + '+!R13, -!SP')
 
 
