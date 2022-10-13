@@ -1,0 +1,11 @@
+var a = 5 + 100
+var b = a + 10
+var c = 0
+
+if a >= b:
+    a = 1
+    b = 2
+    c = 100
+
+    if a + c > b:
+        b = a + b + c

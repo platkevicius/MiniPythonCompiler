@@ -1,6 +1,9 @@
+from _ast import If
+
 from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
 from syntaxTree.expression.VariableNode import VariableNode
+from syntaxTree.statement.IfStatement import IfStatement
 from syntaxTree.statement.VariableAssignment import VariableAssignment
 from syntaxTree.statement.VariableCreation import VariableCreation
 
@@ -71,3 +74,8 @@ def parse_tree_to_ast(e):
         return VariableNode(e.children[0].value)
     elif e.data == 'sum':
         return parse_tree_to_ast(e.children[0])
+    elif e.data == 'if':
+        statements = []
+        for i in range(1, len(e.children)):
+            statements.append(parse_tree_to_ast(e.children[i]))
+        return IfStatement(parse_tree_to_ast(e.children[0]), statements)

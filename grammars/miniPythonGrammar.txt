@@ -4,14 +4,14 @@ function: "def" WORD "(" argument? ")" ":" statement*
 
 argument: WORD ("=" SIGNED_NUMBER )? ( "," WORD ("=" SIGNED_NUMBER )?)*
 
-statement: "if" disjunction ":" statement*                                   -> if
-    | "while" disjunction ":" statement*                                     -> while
-    | "for" WORD "in" WORD ":" statement*                                    -> for
-    | "return" disjunction                                                   -> return
-    | WORD "=" disjunction                                                   -> variable_assignment
-    | "var" WORD "=" disjunction                                             -> variable_creation
-    | WORD "[" sum "]" "=" disjunction                                       -> array_assignment
-    | function_call                                                          -> call
+statement: "if" disjunction ":" statement*                                  -> if
+    | "while" disjunction ":" statement*                                    -> while
+    | "for" WORD "in" WORD ":" statement*                                   -> for
+    | "return" disjunction                                                  -> return
+    | WORD "=" disjunction                                                  -> variable_assignment
+    | "var" WORD "=" disjunction                                            -> variable_creation
+    | WORD "[" sum "]" "=" disjunction                                      -> array_assignment
+    | function_call                                                         -> call
 
 disjunction: disjunction "or" conjunction                                   -> or
     | conjunction                                                           -> conjunction
@@ -45,7 +45,7 @@ primary: SIGNED_NUMBER                                                      -> n
          | WORD                                                             -> variable
          | WORD "[" sum "]"                                                 -> array_indexing
          | "["SIGNED_NUMBER ( "," SIGNED_NUMBER)*"]"                        -> array_indexing_multi
-         | "(" sum ")"                                                     -> grouping
+         | "(" sum ")"                                                      -> grouping
 
 function_call: WORD "(" arg_list? ")"
 
