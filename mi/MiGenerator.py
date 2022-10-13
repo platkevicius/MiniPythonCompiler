@@ -33,17 +33,20 @@ def generate(ast):
 
 def generateIfStatement(if_statement):
     generate(if_statement.condition)
-    if_false = createNewSymbol('ifFalse')
+    else_symbol = createNewSymbol('else')
 
     print('CMP W I 1, !SP')
-    print('JNE ' + if_false)
+    print('JNE ' + else_symbol)
 
     print('')
     for statement in if_statement.statements:
         generate(statement)
     print('')
-    print(if_false + ': ')
+    print(else_symbol + ': ')
     print('ADD W I 0, R0')  # this is added due to labels not being able to stay standalone
+    print('')
+    for statement in if_statement.else_statements:
+        generate(statement)
 
 
 def generateVariableCreation(variable_creation):

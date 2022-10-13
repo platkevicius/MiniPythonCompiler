@@ -76,6 +76,15 @@ def parse_tree_to_ast(e):
         return parse_tree_to_ast(e.children[0])
     elif e.data == 'if':
         statements = []
+        elseStatements = []
         for i in range(1, len(e.children)):
+            if e.children[i].data == 'else_statement':
+                elseStatements = parse_tree_to_ast(e.children[i])
+                continue
             statements.append(parse_tree_to_ast(e.children[i]))
-        return IfStatement(parse_tree_to_ast(e.children[0]), statements)
+        return IfStatement(parse_tree_to_ast(e.children[0]), statements, elseStatements)
+    elif e.data == 'else_statement':
+        statements = []
+        for child in e.children:
+            statements.append(parse_tree_to_ast(child))
+        return statements

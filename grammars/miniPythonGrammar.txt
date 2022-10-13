@@ -4,7 +4,7 @@ function: "def" WORD "(" argument? ")" ":" statement*
 
 argument: WORD ("=" SIGNED_NUMBER )? ( "," WORD ("=" SIGNED_NUMBER )?)*
 
-statement: "if" disjunction ":" statement*                                  -> if
+statement: "if" disjunction ":" statement* else_statement?                  -> if
     | "while" disjunction ":" statement*                                    -> while
     | "for" WORD "in" WORD ":" statement*                                   -> for
     | "return" disjunction                                                  -> return
@@ -12,6 +12,8 @@ statement: "if" disjunction ":" statement*                                  -> i
     | "var" WORD "=" disjunction                                            -> variable_creation
     | WORD "[" sum "]" "=" disjunction                                      -> array_assignment
     | function_call                                                         -> call
+
+else_statement: "else" ":" statement*
 
 disjunction: disjunction "or" conjunction                                   -> or
     | conjunction                                                           -> conjunction
