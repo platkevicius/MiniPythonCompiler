@@ -1,6 +1,7 @@
 from syntaxTree.expression.VariableNode import VariableNode
 from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
+from syntaxTree.statement.IfStatement import IfStatement
 from syntaxTree.statement.VariableAssignment import VariableAssignment
 from syntaxTree.statement.VariableCreation import VariableCreation
 from mi.VariableAllocator import *
@@ -16,6 +17,8 @@ def generateMachineCode(goals):
 
 
 def generate(ast):
+    if type(ast) is IfStatement:
+        generateIfStatement(ast)
     if type(ast) is VariableCreation:
         generateVariableCreation(ast)
     if type(ast) is VariableAssignment:
@@ -26,6 +29,21 @@ def generate(ast):
         generateConstant(ast)
     elif type(ast) is VariableNode:
         generateResolveVariable(ast)
+
+
+def generateIfStatement(if_statement):
+    generate(if_statement.condition)
+    if_false = createNewSymbol('ifFalse')
+
+    print('CMP W I 1, !SP')
+    print('JNE ' + if_false)
+
+    print('')
+    for statement in if_statement.statements:
+        generate(statement)
+    print('')
+    print(if_false + ': ')
+    print('ADD W I 0, R0')  # this is added due to labels not being able to stay standalone
 
 
 def generateVariableCreation(variable_creation):
