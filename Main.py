@@ -1,5 +1,7 @@
 from lark import Lark
 from argparse import ArgumentParser
+
+from mi.allocation.DataAllocator import DataAllocator
 from syntaxTree import Converter
 from mi import MiGenerator
 
@@ -30,4 +32,4 @@ print(parse_tree.pretty())
 ast = Converter.parse_tree_to_ast(parse_tree)
 
 # code generation for target architecture (MI / RISC-V)
-MiGenerator.generateMachineCode(ast)
+MiGenerator.generateMachineCode(ast, DataAllocator())
