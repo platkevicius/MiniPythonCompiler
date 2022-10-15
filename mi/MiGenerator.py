@@ -7,6 +7,7 @@ from syntaxTree.statement.VariableAssignment import VariableAssignment
 from syntaxTree.statement.VariableCreation import VariableCreation
 from mi.allocation.DataAllocator import *
 from mi.SymbolGenerator import createNewSymbol
+from syntaxTree.statement.WhileStatement import WhileStatement
 
 
 def generateMachineCode(goals, scope):
@@ -18,6 +19,8 @@ def generateMachineCode(goals, scope):
 
 
 def generate(ast, scope):
+    if type(ast) is WhileStatement:
+        generateWhileStatement(ast, scope)
     if type(ast) is IfStatement:
         generateIfStatement(ast, scope)
     if type(ast) is VariableCreation:
@@ -32,6 +35,28 @@ def generate(ast, scope):
         generateResolveVariable(ast, scope)
 
 
+def generateWhileStatement(while_statement, scope):
+    local_scope = LocalScope(scope)
+    while_symbol = createNewSymbol('while')
+    continue_symbol = createNewSymbol('continue')
+
+    print('')           # formatting
+    print(while_symbol + ':')
+    generate(while_statement.condition, local_scope)
+
+    print('CMP W I 1, !SP')
+    print('JNE ' + continue_symbol)
+
+    for statement in while_statement.statements:
+        generate(statement, local_scope)
+    print('ADD W I 4, SP')  # reset Stack Pointer
+    print('JUMP ' + while_symbol)
+
+    print('')   # formatting
+    print(continue_symbol + ":")
+    print('ADD W I ' + str(1 + local_scope.dataInStack * 4) + ', SP')  # reset Stack Pointer
+
+
 def generateIfStatement(if_statement, scope):
     local_scope = LocalScope(scope)
     generate(if_statement.condition, local_scope)
@@ -43,7 +68,7 @@ def generateIfStatement(if_statement, scope):
     print('CMP W I 1, !SP')
     print('JNE ' + (else_symbol if has_else else continue_symbol))
 
-    print('')
+    print('')   # formatting
     for statement in if_statement.statements:
         generate(statement, local_scope)
 
@@ -77,6 +102,7 @@ def generateVariableCreation(variable_creation, scope):
 
     print('ADD W I 4, SP')  # reset stack pointer
 
+
 def generateVariableAssignment(variable_assignment, scope):
     name = variable_assignment.name
     generate(variable_assignment.value, scope)
@@ -92,6 +118,8 @@ def generateVariableAssignment(variable_assignment, scope):
             print('MOVE W !SP, !R13')
         case Location.STACK:
             print('MOVE W !SP, ' + str((scope.dataInStack - variable.offset) * 4) + '+!SP')
+
+    print('ADD W I 4, SP')
 
 
 def generateResolveVariable(variable, scope):

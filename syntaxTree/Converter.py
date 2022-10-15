@@ -6,8 +6,10 @@ from syntaxTree.expression.VariableNode import VariableNode
 from syntaxTree.statement.IfStatement import IfStatement
 from syntaxTree.statement.VariableAssignment import VariableAssignment
 from syntaxTree.statement.VariableCreation import VariableCreation
+from syntaxTree.statement.WhileStatement import WhileStatement
 
 
+# transforms a parse tree from lark to an ast for code generation
 def parse_tree_to_ast(e):
     if e.data == 'goal':
         ast = []
@@ -88,3 +90,8 @@ def parse_tree_to_ast(e):
         for child in e.children:
             statements.append(parse_tree_to_ast(child))
         return statements
+    elif e.data == 'while':
+        statements = []
+        for i in range(1, len(e.children)):
+            statements.append(parse_tree_to_ast(e.children[i]))
+        return WhileStatement(parse_tree_to_ast(e.children[0]), statements)
