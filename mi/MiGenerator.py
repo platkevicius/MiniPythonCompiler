@@ -39,6 +39,11 @@ def generateWhileStatement(while_statement, scope):
     local_scope = LocalScope(scope)
     while_symbol = createNewSymbol('while')
     continue_symbol = createNewSymbol('continue')
+    variable_creation_statements = findVariableCreationStatements(while_statement)
+
+    for creation in variable_creation_statements:
+        scope.addData(creation.name)
+        print('SUB W I 4, SP')
 
     print('')           # formatting
     print(while_symbol + ':')
@@ -48,13 +53,18 @@ def generateWhileStatement(while_statement, scope):
     print('JNE ' + continue_symbol)
 
     for statement in while_statement.statements:
+        if type(statement) is VariableCreation:
+            generate(VariableAssignment(statement.name, statement.value), local_scope)
+            continue
+
         generate(statement, local_scope)
+
     print('ADD W I 4, SP')  # reset Stack Pointer
     print('JUMP ' + while_symbol)
 
     print('')   # formatting
     print(continue_symbol + ":")
-    print('ADD W I ' + str(1 + local_scope.dataInStack * 4) + ', SP')  # reset Stack Pointer
+    print('ADD W I ' + str((1 + local_scope.dataInStack) * 4) + ', SP')  # reset Stack Pointer
 
 
 def generateIfStatement(if_statement, scope):
@@ -210,3 +220,11 @@ def generateHeap():
     return '''
 hp: RES 4
 heap: RES 0'''
+
+
+def findVariableCreationStatements(ast):
+    statements = []
+    for statement in ast.statements:
+        if type(statement) is VariableCreation:
+            statements.append(statement)
+    return statements

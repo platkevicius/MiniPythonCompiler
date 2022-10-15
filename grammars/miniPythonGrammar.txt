@@ -9,7 +9,7 @@ statement: "if" disjunction ":" statement* else_statement?                  -> i
     | "for" WORD "in" WORD ":" statement*                                   -> for
     | "return" disjunction                                                  -> return
     | WORD "=" disjunction                                                  -> variable_assignment
-    | "var" WORD "=" disjunction                                            -> variable_creation
+    | "var" WORD ("=" disjunction)?                                         -> variable_creation
     | WORD "[" sum "]" "=" disjunction                                      -> array_assignment
     | function_call                                                         -> call
 
