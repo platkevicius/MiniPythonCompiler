@@ -1,2 +1,11 @@
-var value = (4+8 > 3 or 5 == 5) and (5 > 10 or 5 < 10)
-value = 800 < 1000
+if 2 > 1:
+    var a = 4
+    var b = 8
+    var c = 3
+    var d = 5
+
+    if 3 > 1:
+        var e = 5
+        var f = 5
+        var g = 10
+        var value = (a+b > c or d == e) and (d > g or d < g)

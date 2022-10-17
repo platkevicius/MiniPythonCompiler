@@ -1,8 +1,7 @@
-from _ast import If
-
 from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
 from syntaxTree.expression.VariableNode import VariableNode
+from syntaxTree.statement.ForStatement import ForStatement
 from syntaxTree.statement.IfStatement import IfStatement
 from syntaxTree.statement.VariableAssignment import VariableAssignment
 from syntaxTree.statement.VariableCreation import VariableCreation
@@ -95,3 +94,13 @@ def parse_tree_to_ast(e):
         for i in range(1, len(e.children)):
             statements.append(parse_tree_to_ast(e.children[i]))
         return WhileStatement(parse_tree_to_ast(e.children[0]), statements)
+    elif e.data == 'for':
+        statements = []
+        for i in range(3, len(e.children)):
+            statements.append(parse_tree_to_ast(e.children[i]))
+        return ForStatement(
+            e.children[0],
+            parse_tree_to_ast(e.children[1]),
+            parse_tree_to_ast(e.children[2]),
+            statements
+        )

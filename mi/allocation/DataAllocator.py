@@ -4,9 +4,10 @@ from mi.allocation.Location import Location
 
 class DataAllocator:
 
-    def __init__(self):
-        self.dataInRegister = 0
-        self.dataInHeap = 0
+    def __init__(self, parent, data_in_register, data_in_heap):
+        self.parent = parent
+        self.dataInRegister = data_in_register
+        self.dataInHeap = data_in_heap
         self.register = {}
         self.heap = {}
 
@@ -31,5 +32,7 @@ class DataAllocator:
             return Data(name, register_value, Location.REGISTER)
         elif heap_value is not None:
             return Data(name, heap_value, Location.HEAP)
+        elif self.parent is not None:
+            return self.parent.findDataLocation(name)
         else:
             raise NameError('There is no Variable with name: ' + name + '.')

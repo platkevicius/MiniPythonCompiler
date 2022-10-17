@@ -15,6 +15,7 @@ comparison: sum "<=" sum                                                    -> l
     | "(" disjunction ")"                                                   -> grouping
     | "true"                                                                -> true
     | "false"                                                               -> false
+    | sum                                                                   -> sum
 
 sum: sum "+" term                                                           -> add
     | sum "-" term                                                          -> minus

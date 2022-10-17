@@ -1,10 +1,14 @@
 var a = 0
 var b = 1
 var i = 0
+var end = 7
 
-while i <= 7:
+while i <= end:
     var temp = b
     b = a + b
     a = temp
 
     i = i + 1
+
+    if b >= 3:
+        var hallo = b + 100

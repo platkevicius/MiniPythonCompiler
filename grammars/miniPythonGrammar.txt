@@ -6,7 +6,7 @@ argument: WORD ("=" SIGNED_NUMBER )? ( "," WORD ("=" SIGNED_NUMBER )?)*
 
 statement: "if" disjunction ":" statement* else_statement?                  -> if
     | "while" disjunction ":" statement*                                    -> while
-    | "for" WORD "in" WORD ":" statement*                                   -> for
+    | "for" WORD "in" "range(" sum "," sum ")" ":" statement*                          -> for
     | "return" disjunction                                                  -> return
     | WORD "=" disjunction                                                  -> variable_assignment
     | "var" WORD ("=" disjunction)?                                         -> variable_creation
