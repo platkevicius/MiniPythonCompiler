@@ -1,0 +1,59 @@
+goal: (function | statement)*
+
+function: "def" WORD "(" argument? ")" ":" statement*
+
+argument: WORD ("=" SIGNED_NUMBER )? ( "," WORD ("=" SIGNED_NUMBER )?)*
+
+statement: "if" disjunction ":" statement* else_statement?                  -> if
+    | "while" disjunction ":" statement*                                    -> while
+    | "for" WORD "in" WORD ":" statement*                                   -> for
+    | "return" disjunction                                                  -> return
+    | WORD "=" disjunction                                                  -> variable_assignment
+    | "var" WORD ("=" disjunction)?                                         -> variable_creation
+    | WORD "[" sum "]" "=" disjunction                                      -> array_assignment
+    | function_call                                                         -> call
+
+else_statement: "else" ":" statement*
+
+disjunction: disjunction "or" conjunction                                   -> or
+    | conjunction                                                           -> conjunction
+
+conjunction: conjunction "and" comparison                                   -> and
+    | comparison                                                            -> comparison
+
+comparison: sum "<=" sum                                                    -> less_equals
+    | sum "<" sum                                                           -> less
+    | sum ">=" sum                                                          -> greater_equals
+    | sum ">" sum                                                           -> greater
+    | sum "!=" sum                                                          -> not_equals
+    | sum "==" sum                                                          -> equals
+    | "(" disjunction ")"                                                   -> grouping
+    | "true"                                                                -> true
+    | "false"                                                               -> false
+    | sum                                                                   -> sum
+
+sum: sum "+" term                                                           -> add
+    | sum "-" term                                                          -> minus
+    | term                                                                  -> term
+
+term: term "*" factor                                                       -> mult
+    | term "/" factor                                                       -> div
+    | factor                                                                -> factor
+
+factor: "-" factor                                                          -> neg
+    | primary                                                               -> primary
+
+primary: SIGNED_NUMBER                                                      -> number
+         | WORD                                                             -> variable
+         | WORD "[" sum "]"                                                 -> array_indexing
+         | "["SIGNED_NUMBER ( "," SIGNED_NUMBER)*"]"                        -> array_indexing_multi
+         | "(" sum ")"                                                      -> grouping
+
+function_call: WORD "(" arg_list? ")"
+
+arg_list: sum ( "," sum )*
+
+%import common.WORD
+%import common.SIGNED_NUMBER
+%import common.WS
+%ignore WS

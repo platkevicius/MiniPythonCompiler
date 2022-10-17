@@ -1,0 +1,32 @@
+
+SEG
+MOVE W I H'10000', SP
+MOVEA heap, hp
+
+start:
+MOVE W I 6, -!SP
+MOVE W I 3, -!SP
+DIV W !SP, 4+!SP
+ADD W I 4, SP
+MOVE W I 1, -!SP
+ADD W !SP, 4+!SP
+ADD W I 4, SP
+MOVE W I 1, -!SP
+MOVE W I 4, -!SP
+MULT W !SP, 4+!SP
+ADD W I 4, SP
+ADD W !SP, 4+!SP
+ADD W I 4, SP
+MOVE W I 10, -!SP
+ADD W !SP, 4+!SP
+ADD W I 4, SP
+MOVE W I 5, -!SP
+MOVE W I 10, -!SP
+MULT W !SP, 4+!SP
+ADD W I 4, SP
+ADD W !SP, 4+!SP
+ADD W I 4, SP
+HALT
+
+hp: RES 4
+heap: RES 0
