@@ -15,10 +15,10 @@ class ExpressionTest(unittest.TestCase):
         grammar = os.path.join(os.path.dirname(__file__), os.pardir, 'grammars/expressionGrammar.txt')
         script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/example1.txt')
         output = os.path.join(os.path.dirname(__file__), 'output/Arithmetic1.txt')
-        program = os.path.join(os.path.dirname(__file__), 'mi-simulator-1.11.jar')
+        program = os.path.join(os.path.dirname(__file__), 'mi-simulator-cli-1.11.jar')
 
         ast = createAstForTest(grammar, script)
-        code = generateMachineCode(ast, DataAllocator())
+        code = generateMachineCode(ast, DataAllocator(None, 0, 0))
 
         file = open(r'' + output, "w")
         for line in code:
@@ -26,7 +26,7 @@ class ExpressionTest(unittest.TestCase):
             file.write('\n')
         file.close()
 
-        execute_java(r'' + program, output)
+        result = subprocess.check_output(["java", "-jar", program, output], shell=True)
 
 
 if __name__ == '__main__':

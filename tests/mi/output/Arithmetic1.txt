@@ -1,6 +1,7 @@
 
 SEG
 MOVE W I H'10000', SP
+MOVE W I H'10000', R12
 MOVEA heap, hp
 
 start:
