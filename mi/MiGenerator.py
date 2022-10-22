@@ -41,9 +41,14 @@ def generate(ast, scope):
 
 
 def generateForStatement(for_statement, scope):
-    local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInHeap)
+    local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
     for_symbol = createNewSymbol('for')
     continue_symbol = createNewSymbol('continue')
+    variable_creation_statements = findVariableCreationStatements(for_statement)
+
+    for creation in variable_creation_statements:
+        scope.addData(creation.name)
+        generated_code.append('ADD W I 4, hp')
 
     # init index variable
     generate(VariableCreation(for_statement.index_var_name, for_statement.range_from), local_scope)
@@ -58,11 +63,15 @@ def generateForStatement(for_statement, scope):
             VariableNode('!')
         ), local_scope)
 
-    generated_code.append('ADD W I 4, SP')
+    generated_code.append('ADD W I 4, SP')  # reset Stack Pointer from logical calculation in Stack
     generated_code.append('CMP W I 1, -4+!SP')
     generated_code.append('JNE ' + continue_symbol)
 
     for statement in for_statement.statements:
+        if type(statement) is VariableCreation:
+            generate(VariableAssignment(statement.name, statement.value), local_scope)
+            continue
+
         generate(statement, local_scope)
 
     generate(VariableAssignment(for_statement.index_var_name, BinaryOp(VariableNode(for_statement.index_var_name), '+', Constant(1))), local_scope)
@@ -70,40 +79,50 @@ def generateForStatement(for_statement, scope):
 
     generated_code.append('')  # formatting
     generated_code.append(continue_symbol + ":")
+    generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Heap Pointer
 
 
 def generateWhileStatement(while_statement, scope):
-    local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInHeap)
+    local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
     while_symbol = createNewSymbol('while')
     continue_symbol = createNewSymbol('continue')
+    variable_creation_statements = findVariableCreationStatements(while_statement)
+
+    for creation in variable_creation_statements:
+        local_scope.addData(creation.name)
+        generated_code.append('ADD W I 4, hp')
 
     generated_code.append('')           # formatting
     generated_code.append(while_symbol + ':')
     generate(while_statement.condition, local_scope)
 
-    generated_code.append('ADD W I 4, SP')
+    generated_code.append('ADD W I 4, SP')  # reset Stack Pointer from logical calculation in Stack
     generated_code.append('CMP W I 1, -4+!SP')
     generated_code.append('JNE ' + continue_symbol)
 
     for statement in while_statement.statements:
+        if type(statement) is VariableCreation:
+            generate(VariableAssignment(statement.name, statement.value), local_scope)
+            continue
+
         generate(statement, local_scope)
 
-    generated_code.append('ADD W I 4, SP')  # reset Stack Pointer
     generated_code.append('JUMP ' + while_symbol)
 
     generated_code.append('')   # formatting
     generated_code.append(continue_symbol + ":")
+    generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Heap Pointer
 
 
 def generateIfStatement(if_statement, scope):
-    local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInHeap)
-    generate(if_statement.condition, scope)
+    local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
     else_symbol = createNewSymbol('else')
     continue_symbol = createNewSymbol('continue')
 
     has_else = len(if_statement.else_statements) != 0
 
-    generated_code.append('ADD W I 4, SP')
+    generate(if_statement.condition, scope)
+    generated_code.append('ADD W I 4, SP')      # reset Stack Pointer from logical calculation in Stack
     generated_code.append('CMP W I 1, -4+!SP')
     generated_code.append('JNE ' + (else_symbol if has_else else continue_symbol))
 
@@ -120,6 +139,7 @@ def generateIfStatement(if_statement, scope):
             generate(statement, local_scope)
 
     generated_code.append(continue_symbol + ":")
+    generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Heap Pointer
 
 
 def generateVariableCreation(variable_creation, scope):
@@ -150,10 +170,8 @@ def generateVariableAssignment(variable_assignment, scope):
         case Location.REGISTER:
             generated_code.append('MOVE W !SP, R' + str(variable.offset))
         case Location.HEAP:
-            generated_code.append('MOVE W hp, R13')
-            generated_code.append('ADD W I 4, hp')
-
-            generated_code.append('MOVE W !SP, !R13')
+            generated_code.append('MOVEA heap, R13')
+            generated_code.append('MOVE W !SP, ' + str(variable.offset * 4) + '+!R13')
         case Location.STACK:
             generated_code.append('MOVE W !SP, ' + str((scope.dataInStack - variable.offset) * 4) + '+!SP')
 
@@ -170,7 +188,7 @@ def generateResolveVariable(variable, scope):
             generated_code.append('MOVEA heap, R13')
             generated_code.append('MOVE W ' + str(variable.offset * 4) + '+!R13, -!SP')
         case Location.STACK:
-            generated_code.append('MOVE W ' + str(variable.offset * 4) + '+!SP, -!SP')
+            generated_code.append('MOVE W ' + str(variable.offset * 4) + '+!R12, -!SP')
 
 
 def generateBinaryOp(binary_op, scope):
@@ -239,6 +257,7 @@ def generateInit():
     return '''
 SEG
 MOVE W I H'10000', SP
+MOVE W I H'10000', R12
 MOVEA heap, hp
 
 start:'''
@@ -248,3 +267,11 @@ def generateHeap():
     return '''
 hp: RES 4
 heap: RES 0'''
+
+
+def findVariableCreationStatements(ast):
+    statements = []
+    for statement in ast.statements:
+        if type(statement) is VariableCreation:
+            statements.append(statement)
+    return statements
