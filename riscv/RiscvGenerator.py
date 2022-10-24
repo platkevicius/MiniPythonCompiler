@@ -201,11 +201,21 @@ def generateBinaryOp(binary_op, scope):
         case '<':
             generateComparison('<')
         case 'or':
-            generated_code.append('OR W !SP, 4+!SP')
-            generated_code.append('ADD W I 4, SP')
+            generated_code.append('lw t0, 4(sp)')
+            generated_code.append('lw t1, 0(sp)')
+
+            generated_code.append('or t0, t0, t1')
+            generated_code.append('addi sp, sp, 8')
+            generated_code.append('addi sp, sp, -4')
+            generated_code.append('sw t0, 0(sp)')
         case 'and':
-            generated_code.append('MULT W !SP, 4+!SP')
-            generated_code.append('ADD W I 4, SP')
+            generated_code.append('lw t0, 4(sp)')
+            generated_code.append('lw t1, 0(sp)')
+
+            generated_code.append('and t0, t0, t1')
+            generated_code.append('addi sp, sp, 8')
+            generated_code.append('addi sp, sp, -4')
+            generated_code.append('sw t0, 0(sp)')
 
 
 def generateArithmetic(op):
@@ -224,23 +234,26 @@ def generateArithmetic(op):
 
 
 def generateComparison(op):
-    mappings = {">": "JGT",
-                ">=": "JGE",
-                "==": "JEQ",
-                "<=": "JLE",
-                "<": "JLE"}
+    mappings = {">": "BGT",
+                ">=": "BGE",
+                "==": "BEQ",
+                "<=": "BLE",
+                "<": "BLT"}
     symbol = createNewSymbol('logicalTrue')
     symbol_continue = createNewSymbol('continue')
 
-    generated_code.append('SUB W !SP, 4+!SP')
-    generated_code.append('ADD W I 4, SP')
-    generated_code.append('CMP W !SP, I 0')
-    generated_code.append(mappings.get(op) + ' ' + symbol)
-    generated_code.append('MOVE W I 0, !SP')
-    generated_code.append('JUMP ' + symbol_continue)
+    generated_code.append('lw t0, 4(sp)')
+    generated_code.append('lw t1, 0(sp)')
+    generated_code.append('addi sp, sp, 8')
+    generated_code.append('addi sp, sp, -4')
+    generated_code.append(mappings.get(op) + ' t0, t1, ' + symbol)
+    generated_code.append('mv t0, zero')
+    generated_code.append('sw t0, 0(sp)')
+    generated_code.append('j ' + symbol_continue)
     generated_code.append('')
     generated_code.append(symbol + ':')
-    generated_code.append('MOVE W I 1, !SP')
+    generated_code.append('addi t0, zero, 1')
+    generated_code.append('sw t0, 0(sp)')
     generated_code.append('')
     generated_code.append(symbol_continue + ':')
 
@@ -251,8 +264,6 @@ def generateConstant(constant):
     generated_code.append('sw t0, 0(sp)')
 
 
-
-# 100000 = 0x186a0
 def generateInit():
     return '''
 .section .text

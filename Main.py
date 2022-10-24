@@ -7,7 +7,7 @@ from syntaxTree import Converter
 from mi import MiGenerator
 
 # read grammar from file
-grammar_file = open("shared/grammars/expressionGrammar.txt")
+grammar_file = open("shared/grammars/miniPythonGrammar.txt")
 grammar = grammar_file.read()
 grammar_file.close()
 
@@ -38,7 +38,7 @@ generated_code = []
 if architecture == 'mi':
     generated_code = MiGenerator.generateMachineCode(ast, DataAllocator(None, 0, 0))
 else:
-    generated_code = RiscvGenerator.generateMachineCode(ast, DataAllocator(None, 0, 0))
+    generated_code = RiscvGenerator.generateMachineCode(ast, DataAllocator(None, 2, 0))
 
 for line in generated_code:
     print(line)
