@@ -18,6 +18,3 @@ while i <= end:
     a = temp
 
     i = i + 1
-
-    if b >= 3:
-        var hallo = b + 100

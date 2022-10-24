@@ -48,7 +48,7 @@ def generateForStatement(for_statement, scope):
 
     for creation in variable_creation_statements:
         scope.addData(creation.name)
-        generated_code.append('ADD W I 4, hp')
+        generated_code.append('SUB W I 4, SP')
 
     # init index variable
     generate(VariableCreation(for_statement.index_var_name, for_statement.range_from), local_scope)
@@ -79,7 +79,7 @@ def generateForStatement(for_statement, scope):
 
     generated_code.append('')  # formatting
     generated_code.append(continue_symbol + ":")
-    generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Heap Pointer
+    generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Stack Pointer
 
 
 def generateWhileStatement(while_statement, scope):
@@ -90,7 +90,7 @@ def generateWhileStatement(while_statement, scope):
 
     for creation in variable_creation_statements:
         local_scope.addData(creation.name)
-        generated_code.append('ADD W I 4, hp')
+        generated_code.append('SUB W I 4, SP')
 
     generated_code.append('')           # formatting
     generated_code.append(while_symbol + ':')
@@ -111,7 +111,7 @@ def generateWhileStatement(while_statement, scope):
 
     generated_code.append('')   # formatting
     generated_code.append(continue_symbol + ":")
-    generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Heap Pointer
+    generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Stack Pointer
 
 
 def generateIfStatement(if_statement, scope):
@@ -137,7 +137,7 @@ def generateIfStatement(if_statement, scope):
             generate(statement, local_scope)
 
     generated_code.append(continue_symbol + ":")
-    generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Heap Pointer
+    generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Stack Pointer
 
 
 def generateVariableCreation(variable_creation, scope):
@@ -148,11 +148,6 @@ def generateVariableCreation(variable_creation, scope):
     match variable.location:
         case Location.REGISTER:
             generated_code.append('MOVE W !SP, R' + str(variable.offset))
-        case Location.HEAP:
-            generated_code.append('MOVE W hp, R13')
-            generated_code.append('ADD W I 4, hp')
-
-            generated_code.append('MOVE W !SP, !R13')
         case Location.STACK:
             generated_code.append('SUB W I 4, SP')
 
@@ -167,11 +162,8 @@ def generateVariableAssignment(variable_assignment, scope):
     match variable.location:
         case Location.REGISTER:
             generated_code.append('MOVE W !SP, R' + str(variable.offset))
-        case Location.HEAP:
-            generated_code.append('MOVEA heap, R13')
-            generated_code.append('MOVE W !SP, ' + str(variable.offset * 4) + '+!R13')
         case Location.STACK:
-            generated_code.append('MOVE W !SP, ' + str((scope.dataInStack - variable.offset) * 4) + '+!SP')
+            generated_code.append('MOVE W !SP, -' + str(variable.offset * 4) + '+!R12')
 
     generated_code.append('ADD W I 4, SP')
 
@@ -182,11 +174,8 @@ def generateResolveVariable(variable, scope):
     match variable.location:
         case Location.REGISTER:
             generated_code.append('MOVE W R' + str(variable.offset) + ', -!SP')
-        case Location.HEAP:
-            generated_code.append('MOVEA heap, R13')
-            generated_code.append('MOVE W ' + str(variable.offset * 4) + '+!R13, -!SP')
         case Location.STACK:
-            generated_code.append('MOVE W ' + str(variable.offset * 4) + '+!R12, -!SP')
+            generated_code.append('MOVE W -' + str(variable.offset * 4) + '+!R12, -!SP')
 
 
 def generateBinaryOp(binary_op, scope):

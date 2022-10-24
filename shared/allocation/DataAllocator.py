@@ -22,7 +22,7 @@ class DataAllocator:
         else:
             self.stack[name] = self.dataInStack
             self.dataInStack += 1
-            return Data(name, self.dataInStack - 1, Location.HEAP)
+            return Data(name, self.dataInStack - 1, Location.STACK)
 
     def findDataLocation(self, name):
         register_value = self.register.get(name, None)
@@ -31,7 +31,10 @@ class DataAllocator:
         if register_value is not None:
             return Data(name, register_value, Location.REGISTER)
         elif stack_value is not None:
-            return Data(name, stack_value, Location.STACK)
+            offset = 1
+            if self.parent is not None:
+                offset = self.parent.dataInStack
+            return Data(name, stack_value + offset, Location.STACK)
         elif self.parent is not None:
             return self.parent.findDataLocation(name)
         else:
