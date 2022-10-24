@@ -147,16 +147,9 @@ def generateVariableCreation(variable_creation, scope):
 
     match variable.location:
         case Location.REGISTER:
-            generated_code.append('MOVE W !SP, R' + str(variable.offset))
-        case Location.HEAP:
-            generated_code.append('MOVE W hp, R13')
-            generated_code.append('ADD W I 4, hp')
-
-            generated_code.append('MOVE W !SP, !R13')
+            generated_code.append('mv  s' + str(variable.offset - 1) + ', t0')
         case Location.STACK:
-            generated_code.append('SUB W I 4, SP')
-
-    generated_code.append('ADD W I 4, SP')  # reset stack pointer
+            generated_code.append('sw t0, (sp)')
 
 
 def generateVariableAssignment(variable_assignment, scope):
@@ -166,27 +159,21 @@ def generateVariableAssignment(variable_assignment, scope):
 
     match variable.location:
         case Location.REGISTER:
-            generated_code.append('MOVE W !SP, R' + str(variable.offset))
-        case Location.HEAP:
-            generated_code.append('MOVEA heap, R13')
-            generated_code.append('MOVE W !SP, ' + str(variable.offset * 4) + '+!R13')
+            generated_code.append('mv  s' + str(variable.offset - 1) + ', t0')
         case Location.STACK:
-            generated_code.append('MOVE W !SP, ' + str((scope.dataInStack - variable.offset) * 4) + '+!SP')
-
-    generated_code.append('ADD W I 4, SP')
+            generated_code.append('sw t0, ' + str((scope.dataInStack - variable.offset) * 4) + '(gp)')
 
 
 def generateResolveVariable(variable, scope):
     variable = scope.findDataLocation(variable.name)
 
+    generated_code.append('addi sp, sp, -4')
     match variable.location:
         case Location.REGISTER:
-            generated_code.append('MOVE W R' + str(variable.offset) + ', -!SP')
-        case Location.HEAP:
-            generated_code.append('MOVEA heap, R13')
-            generated_code.append('MOVE W ' + str(variable.offset * 4) + '+!R13, -!SP')
+            generated_code.append('sw s' + str(variable.offset - 1) + ', 0(sp)')
         case Location.STACK:
-            generated_code.append('MOVE W ' + str(variable.offset * 4) + '+!R12, -!SP')
+            generated_code.append('lw t0, ' + str(variable.offset * 4) + '(gp)')
+            generated_code.append('sw t0, 0(sp)')
 
 
 def generateBinaryOp(binary_op, scope):
@@ -272,7 +259,7 @@ def generateInit():
 .global __start
 
 __start:
-addi sp, sp, 100000     
+mv sp, gp     
 '''
 
 
