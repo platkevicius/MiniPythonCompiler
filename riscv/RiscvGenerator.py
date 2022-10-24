@@ -16,8 +16,6 @@ def generateMachineCode(goals, scope):
     generated_code.append(generateInit())
     for goal in goals:
         generate(goal, scope)
-    generated_code.append('HALT')
-    generated_code.append(generateHeap())
     return generated_code
 
 
@@ -198,17 +196,13 @@ def generateBinaryOp(binary_op, scope):
     op = binary_op.op
     match op:
         case '+':
-            generated_code.append('ADD W !SP, 4+!SP')
-            generated_code.append('ADD W I 4, SP')
+            generateArithmetic(op)
         case '-':
-            generated_code.append('SUB W !SP, 4+!SP')
-            generated_code.append('ADD W I 4, SP')
+            generateArithmetic(op)
         case '*':
-            generated_code.append('MULT W !SP, 4+!SP')
-            generated_code.append('ADD W I 4, SP')
+            generateArithmetic(op)
         case '/':
-            generated_code.append('DIV W !SP, 4+!SP')
-            generated_code.append('ADD W I 4, SP')
+            generateArithmetic(op)
         case '>':
             generateComparison('>')
         case '>=':
@@ -225,6 +219,21 @@ def generateBinaryOp(binary_op, scope):
         case 'and':
             generated_code.append('MULT W !SP, 4+!SP')
             generated_code.append('ADD W I 4, SP')
+
+
+def generateArithmetic(op):
+    mappings = {"+": "add",
+                "-": "sub",
+                "/": "div",
+                "*": "mul"}
+
+    generated_code.append('lw t0, 4(sp)')
+    generated_code.append('lw t1, 0(sp)')
+
+    generated_code.append(mappings.get(op) + ' t0, t0, t1')
+    generated_code.append('addi sp, sp, 8')
+    generated_code.append('addi sp, sp, -4')
+    generated_code.append('sw t0, 0(sp)')
 
 
 def generateComparison(op):
@@ -250,23 +259,21 @@ def generateComparison(op):
 
 
 def generateConstant(constant):
-    generated_code.append('MOVE W I ' + str(constant.value) + ', -!SP')
+    generated_code.append('addi sp, sp, -4')
+    generated_code.append('addi t0, zero, ' + str(constant.value))
+    generated_code.append('sw t0, 0(sp)')
 
 
+
+# 100000 = 0x186a0
 def generateInit():
     return '''
-SEG
-MOVE W I H'10000', SP
-MOVE W I H'10000', R12
-MOVEA heap, hp
+.section .text
+.global __start
 
-start:'''
-
-
-def generateHeap():
-    return '''
-hp: RES 4
-heap: RES 0'''
+__start:
+addi sp, sp, 100000     
+'''
 
 
 def findVariableCreationStatements(ast):

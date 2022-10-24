@@ -3,9 +3,8 @@ import subprocess
 import unittest
 
 from mi.MiGenerator import generateMachineCode
-from mi.allocation.DataAllocator import DataAllocator
+from shared.allocation.DataAllocator import DataAllocator
 from tests.mi.TestUtil import createAstForTest
-from tests.util.ProgramExecuter import execute_java
 
 
 class ExpressionTest(unittest.TestCase):

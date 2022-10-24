@@ -1,5 +1,5 @@
-from mi.allocation.Data import Data
-from mi.allocation.Location import Location
+from shared.allocation.Data import Data
+from shared.allocation.Location import Location
 
 
 class DataAllocator:
