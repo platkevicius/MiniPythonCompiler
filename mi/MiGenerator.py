@@ -132,8 +132,6 @@ def generateIfStatement(if_statement, scope):
 
     if has_else:
         generated_code.append('JUMP ' + continue_symbol)
-
-    if has_else:
         generated_code.append(else_symbol + ': ')
         for statement in if_statement.else_statements:
             generate(statement, local_scope)

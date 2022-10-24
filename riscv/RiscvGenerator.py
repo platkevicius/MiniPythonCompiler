@@ -120,24 +120,24 @@ def generateIfStatement(if_statement, scope):
     has_else = len(if_statement.else_statements) != 0
 
     generate(if_statement.condition, scope)
-    generated_code.append('ADD W I 4, SP')      # reset Stack Pointer from logical calculation in Stack
-    generated_code.append('CMP W I 1, -4+!SP')
-    generated_code.append('JNE ' + (else_symbol if has_else else continue_symbol))
+    generated_code.append('lw t0, 0(sp)')
+    generated_code.append('addi t1, zero, 1')    # for comparing if statement
+    generated_code.append('addi sp, sp, 4')      # reset Stack Pointer from logical calculation in Stack
+    generated_code.append('bne t0, t1, ' + (else_symbol if has_else else continue_symbol))
 
     generated_code.append('')   # formatting
     for statement in if_statement.statements:
         generate(statement, local_scope)
 
     if has_else:
-        generated_code.append('JUMP ' + continue_symbol)
-
-    if has_else:
+        generated_code.append('j ' + continue_symbol)
         generated_code.append(else_symbol + ': ')
         for statement in if_statement.else_statements:
             generate(statement, local_scope)
 
+    generated_code.append('')   # formatting
     generated_code.append(continue_symbol + ":")
-    generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Heap Pointer
+    generated_code.append('addi sp, sp, ' + str(local_scope.getDataInStack() * 4))  # reset Stack Pointer
 
 
 def generateVariableCreation(variable_creation, scope):

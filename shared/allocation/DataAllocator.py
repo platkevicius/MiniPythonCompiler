@@ -24,7 +24,6 @@ class DataAllocator:
             self.dataInStack += 1
             return Data(name, self.dataInStack - 1, Location.HEAP)
 
-
     def findDataLocation(self, name):
         register_value = self.register.get(name, None)
         stack_value = self.stack.get(name, None)
