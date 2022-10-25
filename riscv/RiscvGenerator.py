@@ -46,7 +46,7 @@ def generateForStatement(for_statement, scope):
 
     for creation in variable_creation_statements:
         scope.addData(creation.name)
-        generated_code.append('ADD W I 4, hp')
+        generated_code.append('SUB W I 4, SP')
 
     # init index variable
     generate(VariableCreation(for_statement.index_var_name, for_statement.range_from), local_scope)
@@ -77,39 +77,32 @@ def generateForStatement(for_statement, scope):
 
     generated_code.append('')  # formatting
     generated_code.append(continue_symbol + ":")
-    generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Heap Pointer
+    generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Stack Pointer
 
 
 def generateWhileStatement(while_statement, scope):
     local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
     while_symbol = createNewSymbol('while')
     continue_symbol = createNewSymbol('continue')
-    variable_creation_statements = findVariableCreationStatements(while_statement)
-
-    for creation in variable_creation_statements:
-        local_scope.addData(creation.name)
-        generated_code.append('ADD W I 4, hp')
 
     generated_code.append('')           # formatting
     generated_code.append(while_symbol + ':')
     generate(while_statement.condition, local_scope)
 
-    generated_code.append('ADD W I 4, SP')  # reset Stack Pointer from logical calculation in Stack
-    generated_code.append('CMP W I 1, -4+!SP')
-    generated_code.append('JNE ' + continue_symbol)
+    generated_code.append('lw t0, 0(sp)')
+    generated_code.append('addi t1, zero, 1')  # for comparing if statement
+    generated_code.append('addi sp, sp, 4')  # reset Stack Pointer from logical calculation in Stack
+    generated_code.append('bne t0, t1, ' + continue_symbol)
 
     for statement in while_statement.statements:
-        if type(statement) is VariableCreation:
-            generate(VariableAssignment(statement.name, statement.value), local_scope)
-            continue
-
         generate(statement, local_scope)
 
-    generated_code.append('JUMP ' + while_symbol)
+    generated_code.append('addi sp, sp, ' + str(local_scope.getDataInStack() * 4))  # reset Stack Pointer
+    generated_code.append('j ' + while_symbol)
 
     generated_code.append('')   # formatting
     generated_code.append(continue_symbol + ":")
-    generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Heap Pointer
+    generated_code.append('addi sp, sp, ' + str(local_scope.getDataInStack() * 4))  # reset Stack Pointer
 
 
 def generateIfStatement(if_statement, scope):
@@ -147,9 +140,10 @@ def generateVariableCreation(variable_creation, scope):
 
     match variable.location:
         case Location.REGISTER:
-            generated_code.append('mv  s' + str(variable.offset - 1) + ', t0')
+            generated_code.append('add  s' + str(variable.offset - 1) + ', t0, zero')
+            generated_code.append('addi sp, sp, 4')         # reset stack pointer
         case Location.STACK:
-            generated_code.append('sw t0, (sp)')
+            generated_code.append('sw t0, 0(sp)')
 
 
 def generateVariableAssignment(variable_assignment, scope):
@@ -159,9 +153,10 @@ def generateVariableAssignment(variable_assignment, scope):
 
     match variable.location:
         case Location.REGISTER:
-            generated_code.append('mv  s' + str(variable.offset - 1) + ', t0')
+            generated_code.append('add  s' + str(variable.offset - 1) + ', t0, zero')
+            generated_code.append('addi sp, sp, 4')  # reset stack pointer
         case Location.STACK:
-            generated_code.append('sw t0, ' + str((scope.dataInStack - variable.offset) * 4) + '(gp)')
+            generated_code.append('sw t0, -' + str(variable.offset * 4) + '(gp)')
 
 
 def generateResolveVariable(variable, scope):
@@ -171,9 +166,11 @@ def generateResolveVariable(variable, scope):
     match variable.location:
         case Location.REGISTER:
             generated_code.append('sw s' + str(variable.offset - 1) + ', 0(sp)')
+            generated_code.append('lw t0, 0(sp)')
         case Location.STACK:
-            generated_code.append('lw t0, ' + str(variable.offset * 4) + '(gp)')
+            generated_code.append('lw t0, -' + str(variable.offset * 4) + '(gp)')
             generated_code.append('sw t0, 0(sp)')
+            generated_code.append('lw t0, 0(sp)')
 
 
 def generateBinaryOp(binary_op, scope):
@@ -247,7 +244,7 @@ def generateComparison(op):
     generated_code.append('addi sp, sp, 8')
     generated_code.append('addi sp, sp, -4')
     generated_code.append(mappings.get(op) + ' t0, t1, ' + symbol)
-    generated_code.append('mv t0, zero')
+    generated_code.append('add t0, zero, zero')
     generated_code.append('sw t0, 0(sp)')
     generated_code.append('j ' + symbol_continue)
     generated_code.append('')
