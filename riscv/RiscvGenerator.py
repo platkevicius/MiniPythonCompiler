@@ -39,18 +39,14 @@ def generate(ast, scope):
 
 
 def generateForStatement(for_statement, scope):
-    local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
+    index_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
     for_symbol = createNewSymbol('for')
     continue_symbol = createNewSymbol('continue')
     variable_creation_statements = findVariableCreationStatements(for_statement)
 
-    for creation in variable_creation_statements:
-        scope.addData(creation.name)
-        generated_code.append('SUB W I 4, SP')
-
     # init index variable
-    generate(VariableCreation(for_statement.index_var_name, for_statement.range_from), local_scope)
-    generate(VariableCreation('!', for_statement.range_to), local_scope)
+    generate(VariableCreation(for_statement.index_var_name, for_statement.range_from), index_scope)
+    generate(VariableCreation('!', for_statement.range_to), index_scope)
 
     generated_code.append('')   # formatting
     generated_code.append(for_symbol + ':')
@@ -59,25 +55,26 @@ def generateForStatement(for_statement, scope):
             VariableNode(for_statement.index_var_name),
             '<=',
             VariableNode('!')
-        ), local_scope)
+        ), index_scope)
 
-    generated_code.append('ADD W I 4, SP')  # reset Stack Pointer from logical calculation in Stack
-    generated_code.append('CMP W I 1, -4+!SP')
-    generated_code.append('JNE ' + continue_symbol)
+
+    for_scope = DataAllocator(index_scope, index_scope.dataInRegister, index_scope.dataInStack)
+    generated_code.append('lw t0, 0(sp)')
+    generated_code.append('addi t1, zero, 1')  # for comparing if statement
+    generated_code.append('addi sp, sp, 4')  # reset Stack Pointer from logical calculation in Stack
+    generated_code.append('bne t0, t1, ' + continue_symbol)
 
     for statement in for_statement.statements:
-        if type(statement) is VariableCreation:
-            generate(VariableAssignment(statement.name, statement.value), local_scope)
-            continue
+        generate(statement, for_scope)
 
-        generate(statement, local_scope)
+    generate(VariableAssignment(for_statement.index_var_name, BinaryOp(VariableNode(for_statement.index_var_name), '+', Constant(1))), for_scope)
+    generated_code.append('addi sp, sp, ' + str(for_scope.getDataInStack() * 4))  # reset Stack Pointer
+    generated_code.append('j ' + for_symbol)
 
-    generate(VariableAssignment(for_statement.index_var_name, BinaryOp(VariableNode(for_statement.index_var_name), '+', Constant(1))), local_scope)
-    generated_code.append('JUMP ' + for_symbol)
-
+    generated_code.append('addi sp, sp, ' + str(for_scope.getDataInStack() * 4))  # reset Stack Pointer
     generated_code.append('')  # formatting
     generated_code.append(continue_symbol + ":")
-    generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Stack Pointer
+    generated_code.append('addi sp, sp, ' + str(index_scope.getDataInStack() * 4))  # reset Stack Pointer
 
 
 def generateWhileStatement(while_statement, scope):
