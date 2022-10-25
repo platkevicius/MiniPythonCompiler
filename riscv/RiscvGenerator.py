@@ -42,7 +42,6 @@ def generateForStatement(for_statement, scope):
     index_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
     for_symbol = createNewSymbol('for')
     continue_symbol = createNewSymbol('continue')
-    variable_creation_statements = findVariableCreationStatements(for_statement)
 
     # init index variable
     generate(VariableCreation(for_statement.index_var_name, for_statement.range_from), index_scope)
@@ -56,7 +55,6 @@ def generateForStatement(for_statement, scope):
             '<=',
             VariableNode('!')
         ), index_scope)
-
 
     for_scope = DataAllocator(index_scope, index_scope.dataInRegister, index_scope.dataInStack)
     generated_code.append('lw t0, 0(sp)')
@@ -266,11 +264,3 @@ def generateInit():
 __start:
 mv sp, gp     
 '''
-
-
-def findVariableCreationStatements(ast):
-    statements = []
-    for statement in ast.statements:
-        if type(statement) is VariableCreation:
-            statements.append(statement)
-    return statements
