@@ -1,11 +1,11 @@
 if 2 > 1:
-    var a = 4
-    var b = 8
-    var c = 3
-    var d = 5
+    var a: int = 4
+    var b: int = 8
+    var c: int = 3
+    var d: int = 5
 
     if 3 > 1:
-        var e = 5
-        var f = 5
-        var g = 10
-        var value = (a+b > c or d == e) and (d > g or d < g)
+        var e: int = 5
+        var f: int = 5
+        var g: int = 10
+        var value: int = (a+b > c or d == e) and (d > g or d < g)

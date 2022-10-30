@@ -1,3 +1,5 @@
+from shared.variables import TypeCheck
+from shared.variables.Variable import Variable
 from syntaxTree.expression.VariableNode import VariableNode
 from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
@@ -51,8 +53,8 @@ def generateForStatement(for_statement, scope):
         generated_code.append('SUB W I 4, SP')
 
     # init index variable
-    generate(VariableCreation(for_statement.index_var_name, for_statement.range_from), local_scope)
-    generate(VariableCreation('!', for_statement.range_to), local_scope)
+    generate(VariableCreation(for_statement.index_var_name, 'int', for_statement.range_from), local_scope)
+    generate(VariableCreation('!', 'int', for_statement.range_to), local_scope)
 
     generated_code.append('')   # formatting
     generated_code.append(for_symbol + ':')
@@ -142,8 +144,12 @@ def generateIfStatement(if_statement, scope):
 
 def generateVariableCreation(variable_creation, scope):
     name = variable_creation.name
+    type_def = variable_creation.type_def
+
+    TypeCheck.checkType(type_def, variable_creation.value, scope)
+
     generate(variable_creation.value, scope)
-    variable = scope.addData(name)
+    variable = scope.addData(Variable(name, type_def))
 
     match variable.location:
         case Location.REGISTER:
@@ -157,7 +163,9 @@ def generateVariableCreation(variable_creation, scope):
 def generateVariableAssignment(variable_assignment, scope):
     name = variable_assignment.name
     generate(variable_assignment.value, scope)
-    variable = scope.findDataLocation(name)
+    variable = scope.findData(name)
+
+    TypeCheck.checkType(variable.data.type_def, variable_assignment.value, scope)
 
     match variable.location:
         case Location.REGISTER:
@@ -169,7 +177,7 @@ def generateVariableAssignment(variable_assignment, scope):
 
 
 def generateResolveVariable(variable, scope):
-    variable = scope.findDataLocation(variable.name)
+    variable = scope.findData(variable.name)
 
     match variable.location:
         case Location.REGISTER:

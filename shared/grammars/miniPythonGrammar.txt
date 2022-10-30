@@ -1,17 +1,24 @@
-goal: (function | statement)*
+goal: (function | struct | statement)*
 
 function: "def" WORD "(" argument? ")" ":" statement*
 
 argument: WORD ("=" SIGNED_NUMBER )? ( "," WORD ("=" SIGNED_NUMBER )?)*
 
+struct: "struct" WORD ":" struct_body
+
+struct_body: WORD ("," WORD)*
+
 statement: "if" disjunction ":" statement* else_statement?                  -> if
     | "while" disjunction ":" statement*                                    -> while
-    | "for" WORD "in" "range(" sum "," sum ")" ":" statement*                          -> for
+    | "for" WORD "in" "range(" sum "," sum ")" ":" statement*               -> for
     | "return" disjunction                                                  -> return
     | WORD "=" disjunction                                                  -> variable_assignment
-    | "var" WORD ("=" disjunction)?                                         -> variable_creation
+    | "var" WORD ":" type ("=" disjunction)?                                -> variable_creation
     | WORD "[" sum "]" "=" disjunction                                      -> array_assignment
     | function_call                                                         -> call
+
+type:   "int"                                                               -> int
+    |   "boolean"                                                           -> boolean
 
 else_statement: "else" ":" statement*
 

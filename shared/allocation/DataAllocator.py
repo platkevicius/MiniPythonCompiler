@@ -11,32 +11,36 @@ class DataAllocator:
         self.register = {}
         self.stack = {}
 
-    def addData(self, name):
-        if self.register.__contains__(name) or self.stack.__contains__(name):
-            raise ValueError('There is already a variable declared with the name: ' + name)
+    def addData(self, data):
+        if self.register.__contains__(data.name) or self.stack.__contains__(data.name):
+            raise ValueError('There is already declaration with the name: ' + data.name)
 
         if self.dataInRegister != 12:
-            self.register[name] = self.dataInRegister
+            var = Data(data, self.dataInRegister, Location.REGISTER)
+            self.register[data.name] = var
             self.dataInRegister += 1
-            return Data(name, self.dataInRegister - 1, Location.REGISTER)
+            return var
         else:
-            self.stack[name] = self.dataInStack
+            var = Data(data, self.dataInStack, Location.STACK)
+            self.stack[data.name] = var
             self.dataInStack += 1
-            return Data(name, self.dataInStack - 1, Location.STACK)
+            return var
 
-    def findDataLocation(self, name):
-        register_value = self.register.get(name, None)
-        stack_value = self.stack.get(name, None)
+    def findData(self, name):
+        register_data = self.register.get(name, None)
+        stack_data = self.stack.get(name, None)
 
-        if register_value is not None:
-            return Data(name, register_value, Location.REGISTER)
-        elif stack_value is not None:
+        if register_data is not None:
+            return register_data
+        elif stack_data is not None:
             offset = 1
             if self.parent is not None:
                 offset = self.parent.dataInStack
-            return Data(name, stack_value + offset, Location.STACK)
+
+            stack_data.offset = offset + stack_data.offset
+            return stack_data
         elif self.parent is not None:
-            return self.parent.findDataLocation(name)
+            return self.parent.findData(name)
         else:
             raise NameError('There is no Variable with name: ' + name + '.')
 

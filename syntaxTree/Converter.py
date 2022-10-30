@@ -66,8 +66,8 @@ def parse_tree_to_ast(e):
     elif e.data == 'conjunction':
         return parse_tree_to_ast(e.children[0])
     elif e.data == 'variable_creation':
-        name, expr = e.children
-        return VariableCreation(name, parse_tree_to_ast(expr))
+        name, type_def, expr = e.children
+        return VariableCreation(name, type_def.data, parse_tree_to_ast(expr))
     elif e.data == 'variable_assignment':
         name, expr = e.children
         return VariableAssignment(name, parse_tree_to_ast(expr))

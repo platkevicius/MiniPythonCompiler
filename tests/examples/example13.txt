@@ -1,9 +1,9 @@
-var a = 0
-var b = 1
-var begin = 0
-var end = 7
+var a: int = 0
+var b: int = 1
+var begin: int = 0
+var end: int = 7
 
 for i in range(begin, end):
-    var temp = b
+    var temp: int = b
     b = a + b
     a = temp
