@@ -10,8 +10,10 @@ from syntaxTree.statement.WhileStatement import WhileStatement
 
 
 # transforms a parse tree from lark to an ast for code generation
+from syntaxTree.struct.StructAssignment import StructAssignment
 from syntaxTree.struct.StructCreate import StructCreate
 from syntaxTree.struct.StructNode import StructNode
+from syntaxTree.struct.StructResolve import StructResolve
 
 
 def parse_tree_to_ast(e):
@@ -124,3 +126,11 @@ def parse_tree_to_ast(e):
     elif e.data == 'struct_create':
         name = e.children[0]
         return StructCreate(name)
+    elif e.data == 'struct_assignment':
+        name, attribute, value = e.children
+        return StructAssignment(name, attribute, parse_tree_to_ast(value))
+    elif e.data == 'struct_resolve':
+        name, attribute = e.children
+        return StructResolve(name, attribute)
+    elif e.data == 'true' or e.data == 'false':
+        return Constant(e.data)

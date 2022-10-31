@@ -1,5 +1,4 @@
 from shared.struct import StructDefinitions
-from shared.struct.Struct import Struct
 from shared.variables import TypeCheck
 from shared.variables.Variable import Variable
 from syntaxTree.expression.VariableNode import VariableNode
@@ -12,8 +11,10 @@ from syntaxTree.statement.VariableCreation import VariableCreation
 from shared.allocation.DataAllocator import *
 from shared.SymbolGenerator import createNewSymbol
 from syntaxTree.statement.WhileStatement import WhileStatement
+from syntaxTree.struct.StructAssignment import StructAssignment
 from syntaxTree.struct.StructCreate import StructCreate
 from syntaxTree.struct.StructNode import StructNode
+from syntaxTree.struct.StructResolve import StructResolve
 
 generated_code = []
 
@@ -32,6 +33,10 @@ def generate(ast, scope):
         generateStruct(ast, scope)
     if type(ast) is StructCreate:
         generateStructCreate(ast, scope)
+    if type(ast) is StructAssignment:
+        generateStructAssignment(ast, scope)
+    if type(ast) is StructResolve:
+        generateStructResolve(ast, scope)
     if type(ast) is ForStatement:
         generateForStatement(ast, scope)
     if type(ast) is WhileStatement:
@@ -67,6 +72,35 @@ def generateStructCreate(struct, scope):
 
     generated_code.append('ADD W I ' + str(offset) + ', hp')
     generated_code.append('MOVE W R13, !SP')
+
+
+def generateStructAssignment(struct, scope):
+    variable = scope.findData(struct.name)
+    struct_name = variable.data.type_def
+    struct_attribute = struct.attribute
+    type_def = StructDefinitions.findTypeForAttribute(struct_name, struct_attribute)
+
+    TypeCheck.checkType(type_def, struct.value, scope)
+    generate(struct.value, scope)
+
+    match variable.location:
+        case Location.REGISTER:
+            generated_code.append('MOVE ' + getSpaceForType(type_def) + ' !SP, ' + str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + ' +!R' + str(variable.offset))
+        case Location.STACK:
+            generated_code.append('MOVE ' + getSpaceForType(type_def) + ' !SP, ' + str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + ' !(-' + str(variable.offset * 4) + '+!R12)')
+
+
+def generateStructResolve(struct, scope):
+    variable = scope.findData(struct.name)
+    struct_name = variable.data.type_def
+    struct_attribute = struct.attribute
+    type_def = StructDefinitions.findTypeForAttribute(struct_name, struct_attribute)
+
+    match variable.location:
+        case Location.REGISTER:
+            generated_code.append('MOVE ' + getSpaceForType(type_def) + ' ' + str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + '+!R' + str(variable.offset) + ', -!SP')
+        case Location.STACK:
+            generated_code.append('MOVE ' + getSpaceForType(type_def) + ' ' + str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + ' !(-' + str(variable.offset * 4) + '+!R12), -!SP')
 
 
 def generateForStatement(for_statement, scope):
@@ -179,7 +213,7 @@ def generateVariableCreation(variable_creation, scope):
 
     match variable.location:
         case Location.REGISTER:
-            generated_code.append('MOVE W !SP, R' + str(variable.offset))
+            generated_code.append('MOVE ' + getSpaceForType(type_def) + ' !SP, R' + str(variable.offset))
         case Location.STACK:
             generated_code.append('SUB W I 4, SP')
 
@@ -190,26 +224,28 @@ def generateVariableAssignment(variable_assignment, scope):
     name = variable_assignment.name
     generate(variable_assignment.value, scope)
     variable = scope.findData(name)
+    type_def = variable.data.type_def
 
     TypeCheck.checkType(variable.data.type_def, variable_assignment.value, scope)
 
     match variable.location:
         case Location.REGISTER:
-            generated_code.append('MOVE W !SP, R' + str(variable.offset))
+            generated_code.append('MOVE ' + getSpaceForType(type_def) + ' !SP, R' + str(variable.offset))
         case Location.STACK:
-            generated_code.append('MOVE W !SP, -' + str(variable.offset * 4) + '+!R12')
+            generated_code.append('MOVE ' + getSpaceForType(type_def) + ' !SP, -' + str(variable.offset * 4) + '+!R12')
 
     generated_code.append('ADD W I 4, SP')
 
 
 def generateResolveVariable(variable, scope):
     variable = scope.findData(variable.name)
+    type_def = variable.data.type_def
 
     match variable.location:
         case Location.REGISTER:
-            generated_code.append('MOVE W R' + str(variable.offset) + ', -!SP')
+            generated_code.append('MOVE ' + getSpaceForType(type_def) + ' R' + str(variable.offset) + ', -!SP')
         case Location.STACK:
-            generated_code.append('MOVE W -' + str(variable.offset * 4) + '+!R12, -!SP')
+            generated_code.append('MOVE ' + getSpaceForType(type_def) + ' -' + str(variable.offset * 4) + '+!R12, -!SP')
 
 
 def generateBinaryOp(binary_op, scope):
@@ -271,7 +307,12 @@ def generateComparison(op):
 
 
 def generateConstant(constant):
-    generated_code.append('MOVE W I ' + str(constant.value) + ', -!SP')
+    if constant.value == 'true':
+        generated_code.append('MOVE B I 1, -!SP')
+    elif constant.value == 'false':
+        generated_code.append('MOVE B I 0, -!SP')
+    else:
+        generated_code.append('MOVE W I ' + str(constant.value) + ', -!SP')
 
 
 def generateInit():
@@ -296,3 +337,13 @@ def findVariableCreationStatements(ast):
         if type(statement) is VariableCreation:
             statements.append(statement)
     return statements
+
+
+def getSpaceForType(type_def):
+    match type_def:
+        case 'int':
+            return 'W'
+        case 'boolean':
+            return 'B'
+        case _:
+            return 'W'
