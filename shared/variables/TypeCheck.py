@@ -14,8 +14,10 @@ def checkType(variable_type, assignment_expr, scope):
             raise ValueError('Wrong type')
         if type(assignment_expr.value) is int and variable_type != 'int':
             raise ValueError('Wrong type')
-    if type(assignment_expr) is VariableNode and variable_type != assignment_expr.type_def:
-        raise ValueError('Wrong type')
+    if type(assignment_expr) is VariableNode:
+        variable = scope.findData(assignment_expr.name)
+        if variable_type != variable.data.type_def:
+            raise ValueError('Wrong type')
     if type(assignment_expr) is StructResolve:
         variable = scope.findData(assignment_expr.name)
         if variable_type != StructDefinitions.findTypeForAttribute(variable.data.type_def, assignment_expr.attribute):

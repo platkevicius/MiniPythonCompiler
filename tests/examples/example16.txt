@@ -8,3 +8,8 @@ recordA.compare = true
 
 var resolveStruct: int = 2 * (recordA.hello + 100)
 var resolveStructA: int = 2 * (recordA.hello + 100)
+
+var test: int = 100
+var testA: int = 200
+
+var testB: int = test + testA
