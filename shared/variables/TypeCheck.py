@@ -1,26 +1,25 @@
-from syntaxTree.expression import BinaryOp
+from shared.struct import StructDefinitions
+from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
 from syntaxTree.expression.VariableNode import VariableNode
 from syntaxTree.struct.StructCreate import StructCreate
+from syntaxTree.struct.StructResolve import StructResolve
 
 
 def checkType(variable_type, assignment_expr, scope):
+    if type(assignment_expr) is StructCreate and variable_type != assignment_expr.name:
+        raise ValueError('Wrong type')
     if type(assignment_expr) is Constant:
-        if variable_type == 'boolean' and (assignment_expr.value != 'true' and assignment_expr.value != 'false'):
-            raise ValueError('Type error')
-        elif variable_type == 'int' and type(assignment_expr.value) != int:
-            raise ValueError('Type error')
+        if (assignment_expr.value == 'true' or assignment_expr.value == 'false') and variable_type != 'boolean':
+            raise ValueError('Wrong type')
+        if type(assignment_expr.value) is int and variable_type != 'int':
+            raise ValueError('Wrong type')
+    if type(assignment_expr) is VariableNode and variable_type != assignment_expr.type_def:
+        raise ValueError('Wrong type')
+    if type(assignment_expr) is StructResolve:
+        variable = scope.findData(assignment_expr.name)
+        if variable_type != StructDefinitions.findTypeForAttribute(variable.data.type_def, assignment_expr.attribute):
+            raise ValueError('Wrong type')
     if type(assignment_expr) is BinaryOp:
-        op = assignment_expr.op
-        if variable_type == 'int' and (op != '+' and op != '-' and op != '*' and op != '/'):
-            raise ValueError('Type error, value is not proper for an integer')
-        if variable_type == 'boolean' and (op != 'or' and op != 'and' and op != ">=" and op != ">" and op != "=" and op != "<=" and op != "<"):
-            raise ValueError('Type error, value is not proper for an boolean')
-    elif type(assignment_expr) is VariableNode:
-        data = scope.findData(assignment_expr.name)
-
-        if data.data.type_def is not variable_type:
-            raise ValueError('wrong types')
-    elif type(assignment_expr) is StructCreate:
-        if assignment_expr.name != variable_type:
-            raise ValueError('wrong types ' + assignment_expr.name + ' != ' + variable_type)
+        checkType(variable_type, assignment_expr.left, scope)
+        checkType(variable_type, assignment_expr.right, scope)

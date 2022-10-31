@@ -7,4 +7,4 @@ recordA.hello = 1000
 recordA.compare = true
 
 var resolveStruct: int = 2 * (recordA.hello + 100)
-var resolveStructA: int = 2 * (recordA.compare + 100)
+var resolveStructA: int = 2 * (recordA.hello + 100)
