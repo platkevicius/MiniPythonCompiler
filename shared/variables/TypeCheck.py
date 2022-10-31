@@ -1,5 +1,6 @@
 from syntaxTree.expression import BinaryOp
 from syntaxTree.expression.VariableNode import VariableNode
+from syntaxTree.struct.StructCreate import StructCreate
 
 
 def checkType(variable_type, assignment_expr, scope):
@@ -9,7 +10,11 @@ def checkType(variable_type, assignment_expr, scope):
             raise ValueError('Type error, value is not proper for an integer')
         if variable_type == 'boolean' and (op != 'or' and op != 'and' and op != ">=" and op != ">" and op != "=" and op != "<=" and op != "<" and op != "True" and op != "False"):
             raise ValueError('Type error, value is not proper for an boolean')
-    if type(assignment_expr) is VariableNode:
-        variable = scope.findData(assignment_expr.name)
-        if variable.data.type_def is not variable_type:
+    elif type(assignment_expr) is VariableNode:
+        data = scope.findData(assignment_expr.name)
+
+        if data.data.type_def is not variable_type:
             raise ValueError('wrong types')
+    elif type(assignment_expr) is StructCreate:
+        if assignment_expr.name != variable_type:
+            raise ValueError('wrong types ' + assignment_expr.name + ' != ' + variable_type)

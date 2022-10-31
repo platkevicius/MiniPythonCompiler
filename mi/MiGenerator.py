@@ -1,3 +1,5 @@
+from shared.struct import StructDefinitions
+from shared.struct.Struct import Struct
 from shared.variables import TypeCheck
 from shared.variables.Variable import Variable
 from syntaxTree.expression.VariableNode import VariableNode
@@ -10,6 +12,8 @@ from syntaxTree.statement.VariableCreation import VariableCreation
 from shared.allocation.DataAllocator import *
 from shared.SymbolGenerator import createNewSymbol
 from syntaxTree.statement.WhileStatement import WhileStatement
+from syntaxTree.struct.StructCreate import StructCreate
+from syntaxTree.struct.StructNode import StructNode
 
 generated_code = []
 
@@ -24,6 +28,10 @@ def generateMachineCode(goals, scope):
 
 
 def generate(ast, scope):
+    if type(ast) is StructNode:
+        generateStruct(ast, scope)
+    if type(ast) is StructCreate:
+        generateStructCreate(ast, scope)
     if type(ast) is ForStatement:
         generateForStatement(ast, scope)
     if type(ast) is WhileStatement:
@@ -42,6 +50,25 @@ def generate(ast, scope):
         generateResolveVariable(ast, scope)
 
 
+def generateStruct(struct, scope):
+    StructDefinitions.addDefinition(struct)
+
+
+def generateStructCreate(struct, scope):
+    generated_code.append('MOVE W hp, R13')
+
+    offset = 0
+    for definition in StructDefinitions.findDefinition(struct.name):
+        match definition.type_def:
+            case 'int':
+                offset += 4
+            case 'boolean':
+                offset += 1
+
+    generated_code.append('ADD W I ' + str(offset) + ', hp')
+    generated_code.append('MOVE W R13, !SP')
+
+
 def generateForStatement(for_statement, scope):
     local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
     for_symbol = createNewSymbol('for')
@@ -49,7 +76,7 @@ def generateForStatement(for_statement, scope):
     variable_creation_statements = findVariableCreationStatements(for_statement)
 
     for creation in variable_creation_statements:
-        scope.addData(creation.name)
+        scope.addData(Variable(creation.name, creation.data.type_def))
         generated_code.append('SUB W I 4, SP')
 
     # init index variable
@@ -91,7 +118,7 @@ def generateWhileStatement(while_statement, scope):
     variable_creation_statements = findVariableCreationStatements(while_statement)
 
     for creation in variable_creation_statements:
-        local_scope.addData(creation.name)
+        local_scope.addData(Variable(creation.name, creation.data.type_def))
         generated_code.append('SUB W I 4, SP')
 
     generated_code.append('')           # formatting
@@ -145,11 +172,10 @@ def generateIfStatement(if_statement, scope):
 def generateVariableCreation(variable_creation, scope):
     name = variable_creation.name
     type_def = variable_creation.type_def
-
-    TypeCheck.checkType(type_def, variable_creation.value, scope)
-
     generate(variable_creation.value, scope)
     variable = scope.addData(Variable(name, type_def))
+
+    TypeCheck.checkType(type_def, variable_creation.value, scope)
 
     match variable.location:
         case Location.REGISTER:

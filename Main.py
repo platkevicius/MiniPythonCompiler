@@ -36,9 +36,9 @@ ast = Converter.parse_tree_to_ast(parse_tree)
 # code generation for target architecture (MI / RISC-V)
 generated_code = []
 if architecture == 'mi':
-    generated_code = MiGenerator.generateMachineCode(ast, DataAllocator(None, 0, 0))
+    generated_code = MiGenerator.generateMachineCode(ast, DataAllocator(None, 0, 0, 0))
 else:
-    generated_code = RiscvGenerator.generateMachineCode(ast, DataAllocator(None, 2, 0))
+    generated_code = RiscvGenerator.generateMachineCode(ast, DataAllocator(None, 2, 0, 0))
 
 for line in generated_code:
     print(line)

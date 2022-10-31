@@ -1,0 +1,15 @@
+struct Test:
+    hello: int,
+    compare: boolean
+
+struct Hallo:
+    hello: int,
+    compare: boolean,
+    a: int,
+    b: int,
+    c: int
+
+var recordA: Test = new Test()
+var recordB: Test = new Test()
+var recordC: Hallo = new Hallo()
+var recordD: Test = new Test()

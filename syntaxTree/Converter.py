@@ -1,3 +1,4 @@
+from shared.variables.Variable import Variable
 from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
 from syntaxTree.expression.VariableNode import VariableNode
@@ -9,6 +10,10 @@ from syntaxTree.statement.WhileStatement import WhileStatement
 
 
 # transforms a parse tree from lark to an ast for code generation
+from syntaxTree.struct.StructCreate import StructCreate
+from syntaxTree.struct.StructNode import StructNode
+
+
 def parse_tree_to_ast(e):
     if e.data == 'goal':
         ast = []
@@ -67,6 +72,9 @@ def parse_tree_to_ast(e):
         return parse_tree_to_ast(e.children[0])
     elif e.data == 'variable_creation':
         name, type_def, expr = e.children
+        if type_def.data == 'struct':
+            type_def = type_def.children[0]
+            return VariableCreation(name, type_def, parse_tree_to_ast(expr))
         return VariableCreation(name, type_def.data, parse_tree_to_ast(expr))
     elif e.data == 'variable_assignment':
         name, expr = e.children
@@ -104,3 +112,15 @@ def parse_tree_to_ast(e):
             parse_tree_to_ast(e.children[2]),
             statements
         )
+    elif e.data == 'struct':
+        name, body = e.children
+        return StructNode(name, parse_tree_to_ast(body))
+    elif e.data == 'struct_body':
+        definitions = []
+
+        for i in range(0, len(e.children), 2):
+            definitions.append(Variable(e.children[i], e.children[i+1].data))
+        return definitions
+    elif e.data == 'struct_create':
+        name = e.children[0]
+        return StructCreate(name)
