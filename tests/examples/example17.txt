@@ -1,0 +1,4 @@
+def test(a: int, b: int, c: int):
+    return a + b + c
+
+var result: int = test(1, 2, 3)
