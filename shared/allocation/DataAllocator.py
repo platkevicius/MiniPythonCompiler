@@ -4,7 +4,7 @@ from shared.allocation.Location import Location
 
 class DataAllocator:
 
-    def __init__(self, parent, data_in_register, data_in_stack, data_in_heap):
+    def __init__(self, parent, data_in_register, data_in_stack):
         self.parent = parent
         self.dataInRegister = data_in_register
         self.dataInStack = data_in_stack

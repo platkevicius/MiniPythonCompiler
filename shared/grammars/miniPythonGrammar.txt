@@ -1,36 +1,40 @@
-goal: (function | struct | statement)*
+goal: _NL* (function | struct | statement)*
 
-function: "def" WORD "(" argument? ")" ":" statement*
+function: "def" WORD "(" argument? ")" ":" _NL _INDENT statement* _DEDENT
 
-argument: WORD ("=" SIGNED_NUMBER )? ( "," WORD ("=" SIGNED_NUMBER )?)*
+argument: WORD ":" type ( "," WORD ":" type)*
 
 struct: "struct" WORD ":" struct_body
 
-struct_body: WORD ":" type ("," WORD ":" type)*
+struct_body: _NL WORD ":" type ("," _NL WORD ":" type)*
 
-statement: "if" disjunction ":" statement* else_statement?                  -> if
-    | "while" disjunction ":" statement*                                    -> while
-    | "for" WORD "in" "range(" sum "," sum ")" ":" statement*               -> for
-    | "return" disjunction                                                  -> return
-    | WORD "=" disjunction                                                  -> variable_assignment
-    | "var" WORD ":" type ("=" (disjunction | struct_create))?              -> variable_creation
-    | WORD "." WORD "=" disjunction                                         -> struct_assignment
-    | WORD "[" sum "]" "=" disjunction                                      -> array_assignment
-    | function_call                                                         -> call
+statement: "if" disjunction ":" _NL _INDENT statement+ _DEDENT else_statement?              -> if
+    | "while" disjunction ":" _NL _INDENT statement+ _DEDENT                                -> while
+    | "for" WORD "in" "range(" sum "," sum ")" ":" _NL _INDENT statement+ _DEDENT           -> for
+    | "return" disjunction _NL*                                                             -> return
+    | WORD "=" disjunction _NL*                                                             -> variable_assignment
+    | "var" WORD ":" type ("=" (disjunction | struct_create | function_call))? _NL*         -> variable_creation
+    | WORD "." WORD "=" disjunction _NL*                                                    -> struct_assignment
+    | WORD "[" sum "]" "=" disjunction _NL*                                                 -> array_assignment
+    | function_call _NL*                                                                    -> call
 
 struct_create: "new" WORD "()"
 
-type: "int"                                                                 -> int
-    | "boolean"                                                             -> boolean
-    | WORD                                                                  -> struct
+function_call: WORD "(" arg_list? ")"
 
-else_statement: "else" ":" statement*
+arg_list: sum ( "," sum )*
 
-disjunction: disjunction "or" conjunction                                   -> or
-    | conjunction                                                           -> conjunction
+type: "int"                                                                                 -> int
+    | "boolean"                                                                             -> boolean
+    | WORD                                                                                  -> struct
 
-conjunction: conjunction "and" comparison                                   -> and
-    | comparison                                                            -> comparison
+else_statement: "else" ":" _NL _INDENT statement+ _DEDENT
+
+disjunction: disjunction "or" conjunction                                                   -> or
+    | conjunction                                                                           -> conjunction
+
+conjunction: conjunction "and" comparison                                                   -> and
+    | comparison                                                                            -> comparison
 
 comparison: sum "<=" sum                                                    -> less_equals
     | sum "<" sum                                                           -> less
@@ -61,11 +65,10 @@ primary: SIGNED_NUMBER                                                      -> n
     | "["SIGNED_NUMBER ( "," SIGNED_NUMBER)*"]"                             -> array_indexing_multi
     | "(" sum ")"                                                           -> grouping
 
-function_call: WORD "(" arg_list? ")"
-
-arg_list: sum ( "," sum )*
-
 %import common.WORD
 %import common.SIGNED_NUMBER
-%import common.WS
-%ignore WS
+%import common.WS_INLINE
+%declare _INDENT _DEDENT
+%ignore WS_INLINE
+
+_NL: /(\r?\n[\t ]*)+/

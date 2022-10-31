@@ -1,6 +1,8 @@
 from lark import Lark
 from argparse import ArgumentParser
 
+from lark.indenter import Indenter
+
 from riscv import RiscvGenerator
 from shared.allocation.DataAllocator import DataAllocator
 from syntaxTree import Converter
@@ -11,8 +13,18 @@ grammar_file = open("shared/grammars/miniPythonGrammar.txt")
 grammar = grammar_file.read()
 grammar_file.close()
 
+
 # initializing parser with lalr
-language_parser = Lark(grammar, start="goal", parser="lalr", lexer="contextual")
+class TreeIndenter(Indenter):
+    NL_type = '_NL'
+    OPEN_PAREN_types = []
+    CLOSE_PAREN_types = []
+    INDENT_type = '_INDENT'
+    DEDENT_type = '_DEDENT'
+    tab_len = 8
+
+
+language_parser = Lark(grammar, start="goal", parser="lalr", postlex=TreeIndenter())
 
 # read script file from command line
 argument_parser = ArgumentParser()
@@ -36,9 +48,9 @@ ast = Converter.parse_tree_to_ast(parse_tree)
 # code generation for target architecture (MI / RISC-V)
 generated_code = []
 if architecture == 'mi':
-    generated_code = MiGenerator.generateMachineCode(ast, DataAllocator(None, 0, 0, 0))
+    generated_code = MiGenerator.generateMachineCode(ast, DataAllocator(None, 0, 0))
 else:
-    generated_code = RiscvGenerator.generateMachineCode(ast, DataAllocator(None, 2, 0, 0))
+    generated_code = RiscvGenerator.generateMachineCode(ast, DataAllocator(None, 2, 0))
 
 for line in generated_code:
     print(line)
