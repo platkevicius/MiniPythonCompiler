@@ -1,3 +1,4 @@
+from shared.struct import StructDefinitions
 from shared.variables import TypeCheck
 from shared.variables.Variable import Variable
 from syntaxTree.expression.VariableNode import VariableNode
@@ -10,6 +11,10 @@ from syntaxTree.statement.VariableCreation import VariableCreation
 from shared.allocation.DataAllocator import *
 from shared.SymbolGenerator import createNewSymbol
 from syntaxTree.statement.WhileStatement import WhileStatement
+from syntaxTree.struct.StructAssignment import StructAssignment
+from syntaxTree.struct.StructCreate import StructCreate
+from syntaxTree.struct.StructNode import StructNode
+from syntaxTree.struct.StructResolve import StructResolve
 
 generated_code = []
 
@@ -22,6 +27,14 @@ def generateMachineCode(goals, scope):
 
 
 def generate(ast, scope):
+    if type(ast) is StructNode:
+        generateStruct(ast)
+    if type(ast) is StructCreate:
+        generateStructCreate(ast)
+    if type(ast) is StructAssignment:
+        generateStructAssignment(ast, scope)
+    if type(ast) is StructResolve:
+        generateStructResolve(ast, scope)
     if type(ast) is ForStatement:
         generateForStatement(ast, scope)
     if type(ast) is WhileStatement:
@@ -38,6 +51,62 @@ def generate(ast, scope):
         generateConstant(ast)
     elif type(ast) is VariableNode:
         generateResolveVariable(ast, scope)
+
+
+def generateStruct(struct):
+    StructDefinitions.addDefinition(struct)
+
+
+def generateStructCreate(struct):
+    generated_code.append('mv t0, t6')
+
+    offset = 0
+    for definition in StructDefinitions.findDefinition(struct.name):
+        match definition.type_def:
+            case 'int':
+                offset += 4
+            case 'boolean':
+                offset += 1
+
+    generated_code.append('addi t6, t6, ' + str(offset))
+    generated_code.append('addi sp, sp, -4')
+    generated_code.append('sw t6, 0(sp)')
+
+
+def generateStructAssignment(struct, scope):
+    variable = scope.findData(struct.name)
+    struct_name = variable.data.type_def
+    struct_attribute = struct.attribute
+    type_def = StructDefinitions.findTypeForAttribute(struct_name, struct_attribute)
+
+    TypeCheck.checkType(type_def, struct.value, scope)
+    generate(struct.value, scope)
+
+    match variable.location:
+        case Location.REGISTER:
+            generated_code.append('l' + getSpaceForType(type_def) + ' t0, 0(sp)')
+            generated_code.append('s' + getSpaceForType(type_def) + ' t0, ' + str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + '(s' + str(variable.offset - 1) + ')')
+        case Location.STACK:
+            generated_code.append('l' + getSpaceForType(type_def) + ' t0, 0(sp)')
+            generated_code.append('l' + getSpaceForType(type_def) + ' t1, -' + str(variable.offset * 4) + '(fp)')
+            generated_code.append('s' + getSpaceForType(type_def) + ' t0, ' + str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + '(t1)')
+
+
+def generateStructResolve(struct, scope):
+    variable = scope.findData(struct.name)
+    struct_name = variable.data.type_def
+    struct_attribute = struct.attribute
+    type_def = StructDefinitions.findTypeForAttribute(struct_name, struct_attribute)
+
+    match variable.location:
+        case Location.REGISTER:
+            generated_code.append('l' + getSpaceForType(type_def) + ' t0, ' + str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + '(s' + str(variable.offset - 1) + ')')
+            generated_code.append('addi sp, sp, -4')
+            generated_code.append('s' + getSpaceForType(type_def) + ' t0, 0(sp)')
+        case Location.STACK:
+            generated_code.append('l' + getSpaceForType(type_def) + ' (-' + str(variable.offset * 4) + '(fp), t0')
+            generated_code.append('addi sp, sp, -4')
+            generated_code.append('s' + getSpaceForType(type_def) + ' ' + str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + '(t0), (sp)')
 
 
 def generateForStatement(for_statement, scope):
@@ -151,29 +220,31 @@ def generateVariableAssignment(variable_assignment, scope):
     name = variable_assignment.name
     generate(variable_assignment.value, scope)
     variable = scope.findData(name)
+    type_def = variable.data.type_def
 
-    TypeCheck.checkType(variable.data.type_def, variable_assignment.value, scope)
+    TypeCheck.checkType(type_def, variable_assignment.value, scope)
 
     match variable.location:
         case Location.REGISTER:
             generated_code.append('add  s' + str(variable.offset - 1) + ', t0, zero')
             generated_code.append('addi sp, sp, 4')  # reset stack pointer
         case Location.STACK:
-            generated_code.append('sw t0, -' + str(variable.offset * 4) + '(gp)')
+            generated_code.append('s' + getSpaceForType(type_def) + ' t0, -' + str(variable.offset * 4) + '(fp)')
 
 
 def generateResolveVariable(variable, scope):
     variable = scope.findData(variable.name)
+    type_def = variable.data.type_def
 
     generated_code.append('addi sp, sp, -4')
     match variable.location:
         case Location.REGISTER:
-            generated_code.append('sw s' + str(variable.offset - 1) + ', 0(sp)')
-            generated_code.append('lw t0, 0(sp)')
+            generated_code.append('s' + getSpaceForType(type_def) + ' s' + str(variable.offset - 1) + ', 0(sp)')
+            generated_code.append('l' + getSpaceForType(type_def) + ' t0, 0(sp)')
         case Location.STACK:
-            generated_code.append('lw t0, -' + str(variable.offset * 4) + '(gp)')
-            generated_code.append('sw t0, 0(sp)')
-            generated_code.append('lw t0, 0(sp)')
+            generated_code.append('l' + getSpaceForType(type_def) + ' t0, -' + str(variable.offset * 4) + '(fp)')
+            generated_code.append('s' + getSpaceForType(type_def) + ' t0, 0(sp)')
+            generated_code.append('l' + getSpaceForType(type_def) + ' t0, 0(sp)')
 
 
 def generateBinaryOp(binary_op, scope):
@@ -259,9 +330,18 @@ def generateComparison(op):
 
 
 def generateConstant(constant):
-    generated_code.append('addi sp, sp, -4')
-    generated_code.append('addi t0, zero, ' + str(constant.value))
-    generated_code.append('sw t0, 0(sp)')
+    if constant.value == 'true':
+        generated_code.append('addi sp, sp, -4')
+        generated_code.append('addi t0, zero, 1')
+        generated_code.append('sw t0, 0(sp)')
+    elif constant.value == 'false':
+        generated_code.append('addi sp, sp, -4')
+        generated_code.append('addi t0, zero, 0')
+        generated_code.append('sw t0, 0(sp)')
+    else:
+        generated_code.append('addi sp, sp, -4')
+        generated_code.append('addi t0, zero, ' + str(constant.value))
+        generated_code.append('sw t0, 0(sp)')
 
 
 def generateInit():
@@ -270,5 +350,15 @@ def generateInit():
 .global __start
 
 __start:
-mv sp, gp     
+mv fp, sp
+mv t6, gp     
 '''
+
+def getSpaceForType(type_def):
+    match type_def:
+        case 'int':
+            return 'w'
+        case 'boolean':
+            return 'b'
+        case _:
+            return 'w'

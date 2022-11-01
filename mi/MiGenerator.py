@@ -30,9 +30,9 @@ def generateMachineCode(goals, scope):
 
 def generate(ast, scope):
     if type(ast) is StructNode:
-        generateStruct(ast, scope)
+        generateStruct(ast)
     if type(ast) is StructCreate:
-        generateStructCreate(ast, scope)
+        generateStructCreate(ast)
     if type(ast) is StructAssignment:
         generateStructAssignment(ast, scope)
     if type(ast) is StructResolve:
@@ -55,11 +55,11 @@ def generate(ast, scope):
         generateResolveVariable(ast, scope)
 
 
-def generateStruct(struct, scope):
+def generateStruct(struct):
     StructDefinitions.addDefinition(struct)
 
 
-def generateStructCreate(struct, scope):
+def generateStructCreate(struct):
     generated_code.append('MOVE W hp, R13')
 
     offset = 0
@@ -71,7 +71,7 @@ def generateStructCreate(struct, scope):
                 offset += 1
 
     generated_code.append('ADD W I ' + str(offset) + ', hp')
-    generated_code.append('MOVE W R13, !SP')
+    generated_code.append('MOVE W R13, -!SP')
 
 
 def generateStructAssignment(struct, scope):
@@ -85,9 +85,9 @@ def generateStructAssignment(struct, scope):
 
     match variable.location:
         case Location.REGISTER:
-            generated_code.append('MOVE ' + getSpaceForType(type_def) + ' !SP, ' + str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + ' +!R' + str(variable.offset))
+            generated_code.append('MOVE ' + getSpaceForType(type_def) + ' !SP+, ' + str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + ' +!R' + str(variable.offset))
         case Location.STACK:
-            generated_code.append('MOVE ' + getSpaceForType(type_def) + ' !SP, ' + str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + ' !(-' + str(variable.offset * 4) + '+!R12)')
+            generated_code.append('MOVE ' + getSpaceForType(type_def) + ' !SP+, ' + str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + ' !(-' + str(variable.offset * 4) + '+!R12)')
 
 
 def generateStructResolve(struct, scope):

@@ -4,9 +4,9 @@ function: "def" WORD "(" argument? ")" ":" _NL _INDENT statement* _DEDENT
 
 argument: WORD ":" type ( "," WORD ":" type)*
 
-struct: "struct" WORD ":" struct_body
+struct: "struct" WORD ":" _NL _INDENT struct_body _DEDENT
 
-struct_body: _NL WORD ":" type ("," _NL WORD ":" type)*
+struct_body: WORD ":" type ("," _NL WORD ":" type)* _NL
 
 statement: "if" disjunction ":" _NL _INDENT statement+ _DEDENT else_statement?              -> if
     | "while" disjunction ":" _NL _INDENT statement+ _DEDENT                                -> while
