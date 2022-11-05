@@ -74,18 +74,13 @@ class MiGenerator(Generator):
                     variable.offset * 4) + '+!R12), -!SP')
 
     def generateForStatement(self, for_statement, scope):
-        local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
+        index_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
         for_symbol = createNewSymbol('for')
         continue_symbol = createNewSymbol('continue')
-        variable_creation_statements = self.findVariableCreationStatements(for_statement)
-
-        for creation in variable_creation_statements:
-            scope.addData(Variable(creation.name, creation.data.type_def))
-            self.generated_code.append('SUB W I 4, SP')
 
         # init index variable
-        self.generate(VariableCreation(for_statement.index_var_name, 'int', for_statement.range_from), local_scope)
-        self.generate(VariableCreation('!', 'int', for_statement.range_to), local_scope)
+        self.generate(VariableCreation(for_statement.index_var_name, 'int', for_statement.range_from), index_scope)
+        self.generate(VariableCreation('!', 'int', for_statement.range_to), index_scope)
 
         self.generated_code.append('')  # formatting
         self.generated_code.append(for_symbol + ':')
@@ -94,37 +89,32 @@ class MiGenerator(Generator):
                 VariableNode(for_statement.index_var_name),
                 '<=',
                 VariableNode('!')
-            ), local_scope)
+            ), index_scope)
 
+        for_scope = DataAllocator(index_scope, index_scope.dataInRegister, index_scope.dataInStack)
         self.generated_code.append('ADD W I 4, SP')  # reset Stack Pointer from logical calculation in Stack
         self.generated_code.append('CMP W I 1, -4+!SP')
         self.generated_code.append('JNE ' + continue_symbol)
 
         for statement in for_statement.statements:
-            if type(statement) is VariableCreation:
-                self.generate(VariableAssignment(statement.name, statement.value), local_scope)
-                continue
-
-            self.generate(statement, local_scope)
+            self.generate(statement, for_scope)
 
         self.generate(VariableAssignment(for_statement.index_var_name,
                                     BinaryOp(VariableNode(for_statement.index_var_name), '+', Constant(1))),
-                 local_scope)
+                 for_scope)
+
+        self.generated_code.append('ADD W I ' + str(for_scope.getDataInStack() * 4) + ', SP')  # reset Stack Pointer
         self.generated_code.append('JUMP ' + for_symbol)
 
+        self.generated_code.append('ADD W I ' + str(for_scope.getDataInStack() * 4) + ', SP')  # reset Stack Pointer
         self.generated_code.append('')  # formatting
         self.generated_code.append(continue_symbol + ":")
-        self.generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Stack Pointer
+        self.generated_code.append('ADD W I ' + str(index_scope.getDataInStack() * 4) + ', SP')  # reset Stack Pointer
 
     def generateWhileStatement(self, while_statement, scope):
         local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
         while_symbol = createNewSymbol('while')
         continue_symbol = createNewSymbol('continue')
-        variable_creation_statements = self.findVariableCreationStatements(while_statement)
-
-        for creation in variable_creation_statements:
-            local_scope.addData(Variable(creation.name, creation.data.type_def))
-            self.generated_code.append('SUB W I 4, SP')
 
         self.generated_code.append('')  # formatting
         self.generated_code.append(while_symbol + ':')
@@ -135,12 +125,9 @@ class MiGenerator(Generator):
         self.generated_code.append('JNE ' + continue_symbol)
 
         for statement in while_statement.statements:
-            if type(statement) is VariableCreation:
-                self.generate(VariableAssignment(statement.name, statement.value), local_scope)
-                continue
-
             self.generate(statement, local_scope)
 
+        self.generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Stack Pointer
         self.generated_code.append('JUMP ' + while_symbol)
 
         self.generated_code.append('')  # formatting
@@ -293,13 +280,6 @@ class MiGenerator(Generator):
         return '''
     hp: RES 4
     heap: RES 0'''
-
-    def findVariableCreationStatements(self, ast):
-        statements = []
-        for statement in ast.statements:
-            if type(statement) is VariableCreation:
-                statements.append(statement)
-        return statements
 
     def getSpaceForType(self, type_def):
         match type_def:
