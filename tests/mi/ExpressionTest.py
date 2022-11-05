@@ -12,7 +12,7 @@ class ExpressionTest(unittest.TestCase):
     @staticmethod
     def test_generate_arithmetic_expression():
         grammar = os.path.join(os.path.dirname(__file__), os.pardir, 'grammars/expressionGrammar.txt')
-        script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/example1.txt')
+        script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/expression1.txt')
         output = os.path.join(os.path.dirname(__file__), 'output/Arithmetic1.txt')
         program = os.path.join(os.path.dirname(__file__), 'mi-simulator-cli-1.11.jar')
 
