@@ -41,17 +41,17 @@ class RiscvGenerator(Generator):
         TypeCheck.checkType(type_def, struct.value, scope)
         self.generate(struct.value, scope)
 
+        lop = self.getSpaceForType(type_def)
+        attr_offset = str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute))
+
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append('l' + self.getSpaceForType(type_def) + ' t0, 0(sp)')
-                self.generated_code.append('s' + self.getSpaceForType(type_def) + ' t0, ' + str(
-                    StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + '(s' + str(
-                    variable.offset - 1) + ')')
+                self.generated_code.append('l' + lop + ' t0, 0(sp)')
+                self.generated_code.append('s' + lop + ' t0, ' + attr_offset + '(s' + str(variable.offset - 1) + ')')
             case Location.STACK:
-                self.generated_code.append('l' + self.getSpaceForType(type_def) + ' t0, 0(sp)')
-                self.generated_code.append('l' + self.getSpaceForType(type_def) + ' t1, -' + str(variable.offset * 4) + '(fp)')
-                self.generated_code.append('s' + self.getSpaceForType(type_def) + ' t0, ' + str(
-                    StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + '(t1)')
+                self.generated_code.append('l' + lop + ' t0, 0(sp)')
+                self.generated_code.append('l' + lop + ' t1, -' + str(variable.offset * 4) + '(fp)')
+                self.generated_code.append('s' + lop + ' t0, ' + attr_offset + '(t1)')
 
     def generateStructResolve(self, struct, scope):
         variable = scope.findData(struct.name)
@@ -59,18 +59,18 @@ class RiscvGenerator(Generator):
         struct_attribute = struct.attribute
         type_def = StructDefinitions.findTypeForAttribute(struct_name, struct_attribute)
 
+        lop = self.getSpaceForType(type_def)
+        attr_offset = str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute))
+
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append('l' + self.getSpaceForType(type_def) + ' t0, ' + str(
-                    StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + '(s' + str(
-                    variable.offset - 1) + ')')
+                self.generated_code.append('l' + lop + ' t0, ' + attr_offset + '(s' + str(variable.offset - 1) + ')')
                 self.generated_code.append('addi sp, sp, -4')
-                self.generated_code.append('s' + self.getSpaceForType(type_def) + ' t0, 0(sp)')
+                self.generated_code.append('s' + lop + ' t0, 0(sp)')
             case Location.STACK:
-                self.generated_code.append('l' + self.getSpaceForType(type_def) + ' (-' + str(variable.offset * 4) + '(fp), t0')
+                self.generated_code.append('l' + lop + ' (-' + str(variable.offset * 4) + '(fp), t0')
                 self.generated_code.append('addi sp, sp, -4')
-                self.generated_code.append('s' + self.getSpaceForType(type_def) + ' ' + str(
-                    StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + '(t0), (sp)')
+                self.generated_code.append('s' + lop + ' ' + attr_offset + '(t0), (sp)')
 
     def generateLoopStatement(self, while_statement, scope):
         local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)

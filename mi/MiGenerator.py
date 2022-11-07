@@ -2,11 +2,6 @@ from shared.Generator import Generator
 from shared.struct import StructDefinitions
 from shared.variables import TypeCheck
 from shared.variables.Variable import Variable
-from syntaxTree.expression.VariableNode import VariableNode
-from syntaxTree.expression.BinaryOp import BinaryOp
-from syntaxTree.expression.Constant import Constant
-from syntaxTree.statement.VariableAssignment import VariableAssignment
-from syntaxTree.statement.VariableCreation import VariableCreation
 from shared.allocation.DataAllocator import *
 from shared.SymbolGenerator import createNewSymbol
 
@@ -47,15 +42,15 @@ class MiGenerator(Generator):
         TypeCheck.checkType(type_def, struct.value, scope)
         self.generate(struct.value, scope)
 
+        lop = self.getSpaceForType(type_def)
+        attr_offset = str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute))
+        variable_offset = str(variable.offset)
+
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append('MOVE ' + self.getSpaceForType(type_def) + ' !SP+, ' + str(
-                    StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + ' +!R' + str(
-                    variable.offset))
+                self.generated_code.append('MOVE ' + lop + ' !SP+, ' + attr_offset + ' +!R' + variable_offset)
             case Location.STACK:
-                self.generated_code.append('MOVE ' + self.getSpaceForType(type_def) + ' !SP+, ' + str(
-                    StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + ' !(-' + str(
-                    variable.offset * 4) + '+!R12)')
+                self.generated_code.append('MOVE ' + lop + ' !SP+, ' + attr_offset + ' !(-' + str(variable.offset * 4) + '+!R12)')
 
     def generateStructResolve(self, struct, scope):
         variable = scope.findData(struct.name)
@@ -63,15 +58,15 @@ class MiGenerator(Generator):
         struct_attribute = struct.attribute
         type_def = StructDefinitions.findTypeForAttribute(struct_name, struct_attribute)
 
+        lop = self.getSpaceForType(type_def)
+        attr_offset = str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute))
+        variable_offset = str(variable.offset)
+
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append('MOVE ' + self.getSpaceForType(type_def) + ' ' + str(
-                    StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + '+!R' + str(
-                    variable.offset) + ', -!SP')
+                self.generated_code.append('MOVE ' + lop + ' ' + attr_offset + '+!R' + variable_offset + ', -!SP')
             case Location.STACK:
-                self.generated_code.append('MOVE ' + self.getSpaceForType(type_def) + ' ' + str(
-                    StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + ' !(-' + str(
-                    variable.offset * 4) + '+!R12), -!SP')
+                self.generated_code.append('MOVE ' + lop + ' ' + attr_offset + ' !(-' + str(variable.offset * 4) + '+!R12), -!SP')
 
     def generateLoopStatement(self, while_statement, scope):
         local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
