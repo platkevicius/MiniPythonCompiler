@@ -1,10 +1,9 @@
 import os
 
 from mi.TestUtil import createAstForTest
-from syntaxTree.statement.ForStatement import ForStatement
 from syntaxTree.statement.IfStatement import IfStatement
 from syntaxTree.statement.VariableCreation import VariableCreation
-from syntaxTree.statement.WhileStatement import WhileStatement
+from syntaxTree.statement.LoopStatement import LoopStatement
 
 
 def ast_if_1():
@@ -58,7 +57,7 @@ def ast_while_1():
     ast = createAstForTest(grammar, script)
     assert len(ast) == 6
 
-    assert type(ast[4]) == WhileStatement
+    assert type(ast[4]) == LoopStatement
     assert len(ast[4].statements) == 4
 
     assert type(ast[5]) == VariableCreation

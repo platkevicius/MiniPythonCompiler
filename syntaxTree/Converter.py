@@ -2,12 +2,10 @@ from shared.variables.Variable import Variable
 from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
 from syntaxTree.expression.VariableNode import VariableNode
-from syntaxTree.statement.ForStatement import ForStatement
 from syntaxTree.statement.IfStatement import IfStatement
 from syntaxTree.statement.VariableAssignment import VariableAssignment
 from syntaxTree.statement.VariableCreation import VariableCreation
-from syntaxTree.statement.WhileStatement import WhileStatement
-
+from syntaxTree.statement.LoopStatement import LoopStatement
 
 # transforms a parse tree from lark to an ast for code generation
 from syntaxTree.struct.StructAssignment import StructAssignment
@@ -20,7 +18,12 @@ def parse_tree_to_ast(e):
     if e.data == 'goal':
         ast = []
         for child in e.children:
-            ast.append(parse_tree_to_ast(child))
+            gen = parse_tree_to_ast(child)
+            if type(gen) == list:
+                ast.extend(gen)
+            else:
+                ast.append(gen)
+
         return ast
     if e.data == 'number':
         return Constant(int(e.children[0].value))
@@ -102,18 +105,28 @@ def parse_tree_to_ast(e):
     elif e.data == 'while':
         statements = []
         for i in range(1, len(e.children)):
-            statements.append(parse_tree_to_ast(e.children[i]))
-        return WhileStatement(parse_tree_to_ast(e.children[0]), statements)
+            gen = parse_tree_to_ast(e.children[i])
+
+            if type(gen) == list:
+                statements.extend(gen)
+            else:
+                statements.append(gen)
+        return LoopStatement(parse_tree_to_ast(e.children[0]), statements)
     elif e.data == 'for':
         statements = []
+        begin = e.children[0]
+
         for i in range(3, len(e.children)):
             statements.append(parse_tree_to_ast(e.children[i]))
-        return ForStatement(
-            e.children[0],
-            parse_tree_to_ast(e.children[1]),
-            parse_tree_to_ast(e.children[2]),
-            statements
-        )
+
+        statements.append(VariableAssignment(begin, BinaryOp(VariableNode(begin), '+', Constant(1))))
+
+        varCreate = VariableCreation(e.children[0], 'int', parse_tree_to_ast(e.children[1]))
+        whileStmt = LoopStatement(
+                    BinaryOp(VariableNode(e.children[0]), '<=', parse_tree_to_ast(e.children[2])),
+                    statements)
+
+        return [varCreate, whileStmt]
     elif e.data == 'struct':
         name, body = e.children
         return StructNode(name, parse_tree_to_ast(body))
@@ -121,7 +134,7 @@ def parse_tree_to_ast(e):
         definitions = []
 
         for i in range(0, len(e.children), 2):
-            definitions.append(Variable(e.children[i], e.children[i+1].data))
+            definitions.append(Variable(e.children[i], e.children[i + 1].data))
         return definitions
     elif e.data == 'struct_create':
         name = e.children[0]

@@ -2,11 +2,6 @@ from shared.Generator import Generator
 from shared.struct import StructDefinitions
 from shared.variables import TypeCheck
 from shared.variables.Variable import Variable
-from syntaxTree.expression.VariableNode import VariableNode
-from syntaxTree.expression.BinaryOp import BinaryOp
-from syntaxTree.expression.Constant import Constant
-from syntaxTree.statement.VariableAssignment import VariableAssignment
-from syntaxTree.statement.VariableCreation import VariableCreation
 from shared.allocation.DataAllocator import *
 from shared.SymbolGenerator import createNewSymbol
 
@@ -77,44 +72,7 @@ class RiscvGenerator(Generator):
                 self.generated_code.append('s' + self.getSpaceForType(type_def) + ' ' + str(
                     StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute)) + '(t0), (sp)')
 
-    def generateForStatement(self, for_statement, scope):
-        index_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
-        for_symbol = createNewSymbol('for')
-        continue_symbol = createNewSymbol('continue')
-
-        # init index variable
-        self.generate(VariableCreation(for_statement.index_var_name, 'int', for_statement.range_from), index_scope)
-        self.generate(VariableCreation('!', 'int', for_statement.range_to), index_scope)
-
-        self.generated_code.append('')  # formatting
-        self.generated_code.append(for_symbol + ':')
-        self.generate(
-            BinaryOp(
-                VariableNode(for_statement.index_var_name),
-                '<=',
-                VariableNode('!')
-            ), index_scope)
-
-        for_scope = DataAllocator(index_scope, index_scope.dataInRegister, index_scope.dataInStack)
-        self.generated_code.append('lw t0, 0(sp)')
-        self.generated_code.append('addi t1, zero, 1')  # for comparing if statement
-        self.generated_code.append('addi sp, sp, 4')  # reset Stack Pointer from logical calculation in Stack
-        self.generated_code.append('bne t0, t1, ' + continue_symbol)
-
-        for statement in for_statement.statements:
-            self.generate(statement, for_scope)
-
-        self.generate(VariableAssignment(for_statement.index_var_name,
-                                    BinaryOp(VariableNode(for_statement.index_var_name), '+', Constant(1))), for_scope)
-        self.generated_code.append('addi sp, sp, ' + str(for_scope.getDataInStack() * 4))  # reset Stack Pointer
-        self.generated_code.append('j ' + for_symbol)
-
-        self.generated_code.append('addi sp, sp, ' + str(for_scope.getDataInStack() * 4))  # reset Stack Pointer
-        self.generated_code.append('')  # formatting
-        self.generated_code.append(continue_symbol + ":")
-        self.generated_code.append('addi sp, sp, ' + str(index_scope.getDataInStack() * 4))  # reset Stack Pointer
-
-    def generateWhileStatement(self, while_statement, scope):
+    def generateLoopStatement(self, while_statement, scope):
         local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
         while_symbol = createNewSymbol('while')
         continue_symbol = createNewSymbol('continue')

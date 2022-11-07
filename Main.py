@@ -50,7 +50,7 @@ generated_code = []
 gen = None
 
 if architecture == 'mi':
-    gen = MiGenerator(ast, DataAllocator(None, 2, 0))
+    gen = MiGenerator(ast, DataAllocator(None, 0, 0))
 else:
     gen = RiscvGenerator(ast, DataAllocator(None, 2, 0))
 

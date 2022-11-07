@@ -2,11 +2,10 @@ from shared.struct import StructDefinitions
 from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
 from syntaxTree.expression.VariableNode import VariableNode
-from syntaxTree.statement.ForStatement import ForStatement
 from syntaxTree.statement.IfStatement import IfStatement
 from syntaxTree.statement.VariableAssignment import VariableAssignment
 from syntaxTree.statement.VariableCreation import VariableCreation
-from syntaxTree.statement.WhileStatement import WhileStatement
+from syntaxTree.statement.LoopStatement import LoopStatement
 from syntaxTree.struct.StructAssignment import StructAssignment
 from syntaxTree.struct.StructCreate import StructCreate
 from syntaxTree.struct.StructNode import StructNode
@@ -28,10 +27,8 @@ class Generator:
             self.generateStructAssignment(ast, scope)
         if type(ast) is StructResolve:
             self.generateStructResolve(ast, scope)
-        if type(ast) is ForStatement:
-            self.generateForStatement(ast, scope)
-        if type(ast) is WhileStatement:
-            self.generateWhileStatement(ast, scope)
+        if type(ast) is LoopStatement:
+            self.generateLoopStatement(ast, scope)
         if type(ast) is IfStatement:
             self.generateIfStatement(ast, scope)
         if type(ast) is VariableCreation:
@@ -60,10 +57,7 @@ class Generator:
     def generateStructResolve(self, ast, scope):
         pass
 
-    def generateForStatement(self, ast, scope):
-        pass
-
-    def generateWhileStatement(self, ast, scope):
+    def generateLoopStatement(self, ast, scope):
         pass
 
     def generateIfStatement(self, ast, scope):

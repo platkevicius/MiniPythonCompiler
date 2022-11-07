@@ -10,4 +10,4 @@ while i <= end:
 
     i = i + 1
 
-var endIndent: boolean = True
+var endIndent: boolean = true
