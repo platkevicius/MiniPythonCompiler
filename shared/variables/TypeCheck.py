@@ -23,5 +23,20 @@ def checkType(variable_type, assignment_expr, scope):
         if variable_type != StructDefinitions.findTypeForAttribute(variable.data.type_def, assignment_expr.attribute):
             raise ValueError('Wrong type')
     if type(assignment_expr) is BinaryOp:
+        checkLogical(variable_type, assignment_expr)
+        checkArithmetic(variable_type, assignment_expr)
+
         checkType(variable_type, assignment_expr.left, scope)
         checkType(variable_type, assignment_expr.right, scope)
+
+
+def checkLogical(variable_type, assigment_expr):
+    logicals = ['or', 'and', '<', '<=', '=', '>=', '>']
+    if logicals.__contains__(assigment_expr.op) and variable_type != 'boolean':
+        raise ValueError('Wrong type')
+
+
+def checkArithmetic(variable_type, assigment_expr):
+    arithmetics = ['+', '-', '*', '/']
+    if arithmetics.__contains__(assigment_expr.op) and variable_type != 'int':
+        raise ValueError('Wrong type')

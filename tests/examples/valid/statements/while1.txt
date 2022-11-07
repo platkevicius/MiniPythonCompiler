@@ -9,3 +9,5 @@ while i <= end:
     a = temp
 
     i = i + 1
+
+var endIndent: boolean = True

@@ -6,7 +6,7 @@ from syntaxTree.expression.Constant import Constant
 
 
 def ast_expr_1():
-    grammar = os.path.join(os.path.dirname(__file__), os.pardir, 'grammars/expressionGrammar.txt')
+    grammar = os.path.join(os.path.dirname(__file__), os.pardir, '../shared/grammars/expressionGrammar.txt')
     script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/valid/expressions/expression1.txt')
 
     ast = createAstForTest(grammar, script)
@@ -18,7 +18,7 @@ def ast_expr_1():
 
 
 def ast_expr_2():
-    grammar = os.path.join(os.path.dirname(__file__), os.pardir, 'grammars/expressionGrammar.txt')
+    grammar = os.path.join(os.path.dirname(__file__), os.pardir, '../shared/grammars/expressionGrammar.txt')
     script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/valid/expressions/expression2.txt')
 
     ast = createAstForTest(grammar, script)

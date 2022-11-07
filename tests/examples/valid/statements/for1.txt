@@ -7,3 +7,5 @@ for i in range(begin, end):
     var temp: int = b
     b = a + b
     a = temp
+
+var endIndent: boolean = True
