@@ -1,0 +1,53 @@
+
+    SEG
+    MOVE W I H'10000', SP
+    MOVE W I H'10000', R12
+    MOVEA heap, hp
+    
+    start:
+MOVE W I 1, -!SP
+MOVE W I 1, -!SP
+ADD W !SP, 4+!SP
+ADD W I 4, SP
+MOVE W I 4, -!SP
+MULT W !SP, 4+!SP
+ADD W I 4, SP
+MOVE W I 10, -!SP
+ADD W !SP, 4+!SP
+ADD W I 4, SP
+MOVE W I 5, -!SP
+MOVE W I 10, -!SP
+MULT W !SP, 4+!SP
+ADD W I 4, SP
+ADD W !SP, 4+!SP
+ADD W I 4, SP
+MOVE W I 2, -!SP
+DIV W !SP, 4+!SP
+ADD W I 4, SP
+MOVE W !SP, R0
+ADD W I 4, SP
+MOVE W I 500, -!SP
+MOVE W I 1000, -!SP
+ADD W !SP, 4+!SP
+ADD W I 4, SP
+MOVE W !SP, R0
+ADD W I 4, SP
+MOVE W I 5, -!SP
+MOVE W I 3, -!SP
+SUB W !SP, 4+!SP
+ADD W I 4, SP
+CMP W !SP, I 0
+JGE logicalTrue0
+MOVE B I 0, !SP
+JUMP continue0
+
+logicalTrue0:
+MOVE B I 1, !SP
+
+continue0:
+MOVE B !SP, R1
+ADD W I 4, SP
+HALT
+
+    hp: RES 4
+    heap: RES 0

@@ -208,11 +208,11 @@ class MiGenerator(Generator):
         self.generated_code.append('ADD W I 4, SP')
         self.generated_code.append('CMP W !SP, I 0')
         self.generated_code.append(mappings.get(op) + ' ' + symbol)
-        self.generated_code.append('MOVE W I 0, !SP')
+        self.generated_code.append('MOVE B I 0, !SP')
         self.generated_code.append('JUMP ' + symbol_continue)
         self.generated_code.append('')
         self.generated_code.append(symbol + ':')
-        self.generated_code.append('MOVE W I 1, !SP')
+        self.generated_code.append('MOVE B I 1, !SP')
         self.generated_code.append('')
         self.generated_code.append(symbol_continue + ':')
 

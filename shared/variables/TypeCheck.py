@@ -9,11 +9,6 @@ from syntaxTree.struct.StructResolve import StructResolve
 def checkType(variable_type, assignment_expr, scope):
     if type(assignment_expr) is StructCreate and variable_type != assignment_expr.name:
         raise ValueError('Wrong type')
-    if type(assignment_expr) is Constant:
-        if (assignment_expr.value == 'true' or assignment_expr.value == 'false') and variable_type != 'boolean':
-            raise ValueError('Wrong type')
-        if type(assignment_expr.value) is int and variable_type != 'int':
-            raise ValueError('Wrong type')
     if type(assignment_expr) is VariableNode:
         variable = scope.findData(assignment_expr.name)
         if variable_type != variable.data.type_def:

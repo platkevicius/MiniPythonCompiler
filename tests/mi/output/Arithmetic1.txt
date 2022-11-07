@@ -1,10 +1,10 @@
 
-SEG
-MOVE W I H'10000', SP
-MOVE W I H'10000', R12
-MOVEA heap, hp
-
-start:
+    SEG
+    MOVE W I H'10000', SP
+    MOVE W I H'10000', R12
+    MOVEA heap, hp
+    
+    start:
 MOVE W I 6, -!SP
 MOVE W I 3, -!SP
 DIV W !SP, 4+!SP
@@ -29,5 +29,5 @@ ADD W !SP, 4+!SP
 ADD W I 4, SP
 HALT
 
-hp: RES 4
-heap: RES 0
+    hp: RES 4
+    heap: RES 0
