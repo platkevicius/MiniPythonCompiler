@@ -1,6 +1,6 @@
 goal: _NL* (function | struct | statement)*
 
-function: "def" WORD "(" argument? ")" ":" _NL _INDENT statement* _DEDENT
+function: "def" WORD "(" argument? ")" "->" type ":" _NL _INDENT statement* _DEDENT
 
 argument: WORD ":" type ( "," WORD ":" type)*
 
