@@ -2,18 +2,19 @@ from shared.variables.Variable import Variable
 from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
 from syntaxTree.expression.VariableNode import VariableNode
+from syntaxTree.function.FunctionCall import FunctionCall
+from syntaxTree.function.FunctionCreate import FunctionCreate
 from syntaxTree.statement.IfStatement import IfStatement
 from syntaxTree.statement.VariableAssignment import VariableAssignment
 from syntaxTree.statement.VariableCreation import VariableCreation
 from syntaxTree.statement.LoopStatement import LoopStatement
-
-# transforms a parse tree from lark to an ast for code generation
 from syntaxTree.struct.StructAssignment import StructAssignment
 from syntaxTree.struct.StructCreate import StructCreate
 from syntaxTree.struct.StructNode import StructNode
 from syntaxTree.struct.StructResolve import StructResolve
 
 
+# transforms a parse tree from lark to an ast for code generation
 def parse_tree_to_ast(e):
     if e.data == 'goal':
         ast = []
@@ -147,3 +148,25 @@ def parse_tree_to_ast(e):
         return StructResolve(name, attribute)
     elif e.data == 'true' or e.data == 'false':
         return Constant(e.data)
+    elif e.data == 'function':
+        name = e.children[0]
+        params = []
+        statements = []
+
+        for i in range(0, len(e.children[1].children), 2):
+            params.append(Variable(e.children[1].children[i], e.children[1].children[i+1].data))
+
+        return_type = e.children[2].data
+
+        for i in range(3, len(e.children)):
+            statements.append(parse_tree_to_ast(e.children[i]))
+
+        return FunctionCreate(name, params, return_type, statements)
+    elif e.data == 'function_call':
+        name = e.children[0]
+        params = []
+
+        for i in range(0, len(e.children[1])):
+            params.append(parse_tree_to_ast(e.children[1][i]))
+
+        return FunctionCall(name, params)
