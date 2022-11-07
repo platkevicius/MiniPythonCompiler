@@ -36,34 +36,34 @@ disjunction: disjunction "or" conjunction                                       
 conjunction: conjunction "and" comparison                                                   -> and
     | comparison                                                                            -> comparison
 
-comparison: sum "<=" sum                                                    -> less_equals
-    | sum "<" sum                                                           -> less
-    | sum ">=" sum                                                          -> greater_equals
-    | sum ">" sum                                                           -> greater
-    | sum "!=" sum                                                          -> not_equals
-    | sum "==" sum                                                          -> equals
-    | "(" disjunction ")"                                                   -> grouping
-    | "true"                                                                -> true
-    | "false"                                                               -> false
-    | sum                                                                   -> sum
+comparison: sum "<=" sum                                                                    -> less_equals
+    | sum "<" sum                                                                           -> less
+    | sum ">=" sum                                                                          -> greater_equals
+    | sum ">" sum                                                                           -> greater
+    | sum "!=" sum                                                                          -> not_equals
+    | sum "==" sum                                                                          -> equals
+    | "(" disjunction ")"                                                                   -> grouping
+    | "true"                                                                                -> true
+    | "false"                                                                               -> false
+    | sum                                                                                   -> sum
 
-sum: sum "+" term                                                           -> add
-    | sum "-" term                                                          -> minus
-    | term                                                                  -> term
+sum: sum "+" term                                                                           -> add
+    | sum "-" term                                                                          -> minus
+    | term                                                                                  -> term
 
-term: term "*" factor                                                       -> mult
-    | term "/" factor                                                       -> div
-    | factor                                                                -> factor
+term: term "*" factor                                                                       -> mult
+    | term "/" factor                                                                       -> div
+    | factor                                                                                -> factor
 
-factor: "-" factor                                                          -> neg
-    | primary                                                               -> primary
+factor: "-" factor                                                                          -> neg
+    | primary                                                                               -> primary
 
-primary: SIGNED_NUMBER                                                      -> number
-    | WORD                                                                  -> variable
-    | WORD "." WORD                                                         -> struct_resolve
-    | WORD "[" sum "]"                                                      -> array_indexing
-    | "["SIGNED_NUMBER ( "," SIGNED_NUMBER)*"]"                             -> array_indexing_multi
-    | "(" sum ")"                                                           -> grouping
+primary: SIGNED_NUMBER                                                                      -> number
+    | WORD                                                                                  -> variable
+    | WORD "." WORD                                                                         -> struct_resolve
+    | WORD "[" sum "]"                                                                      -> array_indexing
+    | "["SIGNED_NUMBER ( "," SIGNED_NUMBER)*"]"                                             -> array_indexing_multi
+    | "(" sum ")"                                                                           -> grouping
 
 %import common.WORD
 %import common.SIGNED_NUMBER

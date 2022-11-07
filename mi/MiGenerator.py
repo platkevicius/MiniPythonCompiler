@@ -24,11 +24,7 @@ class MiGenerator(Generator):
 
         offset = 0
         for definition in StructDefinitions.findDefinition(struct.name):
-            match definition.type_def:
-                case 'int':
-                    offset += 4
-                case 'boolean':
-                    offset += 1
+            offset += StructDefinitions.getOffsetForType(definition.type_def)
 
         self.generated_code.append('ADD W I ' + str(offset) + ', hp')
         self.generated_code.append('MOVE W R13, -!SP')
@@ -155,7 +151,8 @@ class MiGenerator(Generator):
 
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append('MOVE ' + self.getSpaceForType(type_def) + ' R' + str(variable.offset) + ', -!SP')
+                self.generated_code.append('MOVE ' + self.getSpaceForType(type_def) + ' R' + str(variable.offset)
+                                           + ', -!SP')
             case Location.STACK:
                 self.generated_code.append(
                     'MOVE ' + self.getSpaceForType(type_def) + ' -' + str(variable.offset * 4) + '+!R12, -!SP')
@@ -244,5 +241,7 @@ class MiGenerator(Generator):
                 return 'W'
             case 'boolean':
                 return 'B'
+            case 'float':
+                return 'F'
             case _:
                 return 'W'

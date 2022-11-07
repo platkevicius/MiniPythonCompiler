@@ -22,11 +22,7 @@ class RiscvGenerator(Generator):
 
         offset = 0
         for definition in StructDefinitions.findDefinition(struct.name):
-            match definition.type_def:
-                case 'int':
-                    offset += 4
-                case 'boolean':
-                    offset += 1
+            offset += StructDefinitions.getOffsetForType(definition.type_def)
 
         self.generated_code.append('addi t6, t6, ' + str(offset))
         self.generated_code.append('addi sp, sp, -4')
