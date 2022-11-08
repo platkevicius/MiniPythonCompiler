@@ -1,0 +1,1 @@
+var compare: boolean = (500 + 100) * 2 - 3

@@ -11,12 +11,11 @@ def checkTypeForVariable(variable_type, assignment_expr, scope):
         case BinaryOp():
             checkLogical(variable_type, assignment_expr)
             checkArithmetic(variable_type, assignment_expr)
-        case _:
-            checkForSubExpressions(variable_type, assignment_expr, scope)
+    checkForSubExpressions(variable_type, assignment_expr, scope)
 
 
 def checkForSubExpressions(variable_type, assignment_expr, scope):
-    match type(assignment_expr):
+    match assignment_expr:
         case BinaryOp():
             checkForSubExpressions(variable_type, assignment_expr.left, scope)
             checkForSubExpressions(variable_type, assignment_expr.right, scope)
@@ -32,7 +31,7 @@ def checkForSubExpressions(variable_type, assignment_expr, scope):
             if variable_type != assignment_expr.name:
                 raise ValueError('Wrong type')
         case Constant():
-            if assignment_expr.value == 'true' or assignment_expr.value == 'false' and variable_type != 'boolean':
+            if (assignment_expr.value == 'true' or assignment_expr.value == 'false') and variable_type != 'boolean':
                 raise ValueError('Wrong type')
             if type(assignment_expr.value) == int and variable_type != 'int':
                 raise ValueError('Wrong Type')

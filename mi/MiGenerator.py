@@ -7,7 +7,7 @@ from shared.SymbolGenerator import createNewSymbol
 
 
 class MiGenerator(Generator):
-    def __init__(self, goals, scope):
+    def  __init__(self, goals, scope):
         super().__init__(goals, scope)
 
     def generateStructCreate(self, struct):
