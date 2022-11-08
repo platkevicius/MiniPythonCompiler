@@ -5,6 +5,7 @@ from syntaxTree.expression.VariableNode import VariableNode
 from syntaxTree.function.FunctionCall import FunctionCall
 from syntaxTree.function.FunctionCreate import FunctionCreate
 from syntaxTree.statement.IfStatement import IfStatement
+from syntaxTree.statement.ReturnStatement import ReturnStatement
 from syntaxTree.statement.VariableAssignment import VariableAssignment
 from syntaxTree.statement.VariableCreation import VariableCreation
 from syntaxTree.statement.LoopStatement import LoopStatement
@@ -166,7 +167,9 @@ def parse_tree_to_ast(e):
         name = e.children[0]
         params = []
 
-        for i in range(0, len(e.children[1])):
-            params.append(parse_tree_to_ast(e.children[1][i]))
+        for i in range(1, len(e.children)):
+            params.append(parse_tree_to_ast(e.children[i]))
 
         return FunctionCall(name, params)
+    elif e.data == 'return':
+        return ReturnStatement(parse_tree_to_ast(e.children[0]))

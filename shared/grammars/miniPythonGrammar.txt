@@ -19,10 +19,6 @@ statement: "if" disjunction ":" _NL _INDENT statement+ _DEDENT else_statement?  
 
 struct_create: "new" WORD "()"
 
-function_call: WORD "(" arg_list? ")"
-
-arg_list: disjunction ( "," disjunction )*
-
 type: "int"                                                                                 -> int
     | "boolean"                                                                             -> boolean
     | WORD                                                                                  -> struct
@@ -63,7 +59,7 @@ primary: SIGNED_NUMBER                                                          
     | WORD "[" sum "]"                                                                      -> array_indexing
     | "["SIGNED_NUMBER ( "," SIGNED_NUMBER)*"]"                                             -> array_indexing_multi
     | "(" sum ")"                                                                           -> grouping
-    | function_call                                                                         -> function_call
+    | WORD "(" disjunction ( "," disjunction )* ")"                                         -> function_call
 
 %import common.WORD
 %import common.SIGNED_NUMBER
