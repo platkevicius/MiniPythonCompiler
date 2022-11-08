@@ -26,7 +26,7 @@ class MiGenerator(Generator):
         struct_attribute = struct.attribute
         type_def = StructDefinitions.findTypeForAttribute(struct_name, struct_attribute)
 
-        TypeCheck.checkType(type_def, struct.value, scope)
+        TypeCheck.checkTypeForVariable(type_def, struct.value, scope)
         self.generate(struct.value, scope)
 
         lop = self.getSpaceForType(type_def)
@@ -109,7 +109,7 @@ class MiGenerator(Generator):
         self.generate(variable_creation.value, scope)
         variable = scope.addData(Variable(name, type_def))
 
-        TypeCheck.checkType(type_def, variable_creation.value, scope)
+        TypeCheck.checkTypeForVariable(type_def, variable_creation.value, scope)
 
         match variable.location:
             case Location.REGISTER:
@@ -125,7 +125,7 @@ class MiGenerator(Generator):
         variable = scope.findData(name)
         type_def = variable.data.type_def
 
-        TypeCheck.checkType(variable.data.type_def, variable_assignment.value, scope)
+        TypeCheck.checkTypeForVariable(variable.data.type_def, variable_assignment.value, scope)
 
         match variable.location:
             case Location.REGISTER:

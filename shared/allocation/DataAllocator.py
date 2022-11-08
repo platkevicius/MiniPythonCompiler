@@ -12,7 +12,7 @@ class DataAllocator:
         self.stack = {}
 
     def addData(self, data):
-        if self.register.__contains__(data.name) or self.stack.__contains__(data.name):
+        if data.name in self.register or data.name in self.stack:
             raise ValueError('There is already declaration with the name: ' + data.name)
         if self.dataInRegister != 12:
             var = Data(data, self.dataInRegister, Location.REGISTER)
