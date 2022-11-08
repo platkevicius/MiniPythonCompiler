@@ -8,16 +8,7 @@ from shared.SymbolGenerator import createNewSymbol
 
 class MiGenerator(Generator):
     def __init__(self, goals, scope):
-        self.generated_code = []
         super().__init__(goals, scope)
-
-    def generateMachineCode(self):
-        self.generated_code.append(self.generateInit())
-        for goal in self.goals:
-            self.generate(goal, self.scope)
-        self.generated_code.append('HALT')
-        self.generated_code.append(self.generateHeap())
-        return self.generated_code
 
     def generateStructCreate(self, struct):
         self.generated_code.append('MOVE W hp, R13')

@@ -17,6 +17,15 @@ class Generator:
     def __init__(self, goals, scope):
         self.goals = goals
         self.scope = scope
+        self.generated_code = []
+
+    def generateMachineCode(self):
+        self.generated_code.append(self.generateInit())
+        for goal in self.goals:
+            self.generate(goal, self.scope)
+        self.generated_code.append('HALT')
+        self.generated_code.append(self.generateHeap())
+        return self.generated_code
 
     def generate(self, ast, scope):
         if type(ast) is StructNode:
@@ -41,9 +50,6 @@ class Generator:
             self.generateConstant(ast)
         elif type(ast) is VariableNode:
             self.generateResolveVariable(ast, scope)
-
-    def generateMachineCode(self):
-        pass
 
     def generateStruct(self, ast):
         StructDefinitions.addDefinition(ast)
@@ -76,4 +82,10 @@ class Generator:
         pass
 
     def generateResolveVariable(self, ast, scope):
+        pass
+
+    def generateInit(self):
+        pass
+
+    def generateHeap(self):
         pass

@@ -11,12 +11,6 @@ class RiscvGenerator(Generator):
         self.generated_code = []
         super().__init__(goals, scope)
 
-    def generateMachineCode(self):
-        self.generated_code.append(self.generateInit())
-        for goal in self.goals:
-            self.generate(goal, self.scope)
-        return self.generated_code
-
     def generateStructCreate(self, struct):
         self.generated_code.append('mv t0, t6')
 
@@ -266,6 +260,9 @@ class RiscvGenerator(Generator):
     mv fp, sp
     mv t6, gp     
     '''
+
+    def generateHeap(self):
+        return ''
 
     def getSpaceForType(self, type_def):
         match type_def:
