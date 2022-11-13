@@ -2,6 +2,8 @@ from shared.struct import StructDefinitions
 from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
 from syntaxTree.expression.VariableNode import VariableNode
+from syntaxTree.function.FunctionCall import FunctionCall
+from syntaxTree.function.FunctionCreate import FunctionCreate
 from syntaxTree.statement.IfStatement import IfStatement
 from syntaxTree.statement.VariableAssignment import VariableAssignment
 from syntaxTree.statement.VariableCreation import VariableCreation
@@ -28,6 +30,10 @@ class Generator:
         return self.generated_code
 
     def generate(self, ast, scope):
+        if type(ast) is FunctionCreate:
+            self.generateFunctionCreate(ast, scope)
+        if type(ast) is FunctionCall:
+            self.generateFunctionCall(ast, scope)
         if type(ast) is StructNode:
             self.generateStruct(ast)
         if type(ast) is StructCreate:
@@ -50,6 +56,12 @@ class Generator:
             self.generateConstant(ast)
         elif type(ast) is VariableNode:
             self.generateResolveVariable(ast, scope)
+
+    def generateFunctionCreate(self, ast, scope):
+        pass
+
+    def generateFunctionCall(self, ast, scope):
+        pass
 
     def generateStruct(self, ast):
         StructDefinitions.addDefinition(ast)

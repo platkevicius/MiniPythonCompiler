@@ -1,4 +1,6 @@
 from shared.Generator import Generator
+from shared.function import FunctionDefinitions
+from shared.function.Function import Function
 from shared.struct import StructDefinitions
 from shared.variables import TypeCheck
 from shared.variables.Variable import Variable
@@ -7,8 +9,42 @@ from shared.SymbolGenerator import createNewSymbol
 
 
 class MiGenerator(Generator):
-    def  __init__(self, goals, scope):
+    def __init__(self, goals, scope):
         super().__init__(goals, scope)
+
+    def generateFunctionCreate(self, ast, scope):
+        name = ast.name
+        return_type = ast.return_type
+        params = ast.params_list
+
+        FunctionDefinitions.addDefinition(Function(name, params, return_type))
+
+        # (todo: this has to be implemented differntly!)
+        param_scope = DataAllocator(scope, 12, 16)  # 12 so no data is being put into the registers and 16 for stack because of saved registers
+
+        for param in ast.params_list:
+            param_scope.addData(param)
+
+        self.generated_code.append(name + ': ')
+        for statement in ast.statements:
+            self.generate(statement, param_scope)
+
+    def generateFunctionCall(self, ast, scope):
+        function = FunctionDefinitions.findDefinition(ast.name)
+
+        if len(function.params) != len(ast.params):
+            raise ValueError('param size is not equivalent')
+
+        for param in function.params:
+            param_type = FunctionDefinitions.findTypeForParam(function.name, param.name)
+            TypeCheck.checkTypeForVariable(param_type, param, scope)
+
+        for i in range(len(function.params) - 1, -1, -1):
+            expr = ast.params[i]
+            self.generate(expr, scope)
+
+        self.generated_code.append('CALL ' + function.name)
+        self.generated_code.append('ADD W I ' + str(len(function.params) * 4) + ', SP')
 
     def generateStructCreate(self, struct):
         self.generated_code.append('MOVE W hp, R13')
@@ -37,7 +73,8 @@ class MiGenerator(Generator):
             case Location.REGISTER:
                 self.generated_code.append('MOVE ' + lop + ' !SP+, ' + attr_offset + ' +!R' + variable_offset)
             case Location.STACK:
-                self.generated_code.append('MOVE ' + lop + ' !SP+, ' + attr_offset + ' !(-' + str(variable.offset * 4) + '+!R12)')
+                self.generated_code.append(
+                    'MOVE ' + lop + ' !SP+, ' + attr_offset + ' !(-' + str(variable.offset * 4) + '+!R12)')
 
     def generateStructResolve(self, struct, scope):
         variable = scope.findData(struct.name)
@@ -53,7 +90,8 @@ class MiGenerator(Generator):
             case Location.REGISTER:
                 self.generated_code.append('MOVE ' + lop + ' ' + attr_offset + '+!R' + variable_offset + ', -!SP')
             case Location.STACK:
-                self.generated_code.append('MOVE ' + lop + ' ' + attr_offset + ' !(-' + str(variable.offset * 4) + '+!R12), -!SP')
+                self.generated_code.append(
+                    'MOVE ' + lop + ' ' + attr_offset + ' !(-' + str(variable.offset * 4) + '+!R12), -!SP')
 
     def generateLoopStatement(self, while_statement, scope):
         local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
@@ -101,7 +139,8 @@ class MiGenerator(Generator):
                 self.generate(statement, local_scope)
 
         self.generated_code.append(continue_symbol + ":")
-        self.generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Stack Pointer
+        if local_scope.getDataInStack() != 0:
+            self.generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Stack Pointer
 
     def generateVariableCreation(self, variable_creation, scope):
         name = variable_creation.name
