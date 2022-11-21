@@ -1,7 +1,9 @@
+from shared.function import FunctionDefinitions
 from shared.struct import StructDefinitions
 from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
 from syntaxTree.expression.VariableNode import VariableNode
+from syntaxTree.function.FunctionCall import FunctionCall
 from syntaxTree.struct.StructCreate import StructCreate
 from syntaxTree.struct.StructResolve import StructResolve
 
@@ -29,6 +31,10 @@ def checkForSubExpressions(variable_type, assignment_expr, scope):
             if var_type1 != var_type2:
                 raise ValueError('Wrong types')
             return var_type1
+        case FunctionCall():
+            name = assignment_expr.name
+            function = FunctionDefinitions.findDefinition(name)
+            return function.return_type
         case VariableNode():
             variable = scope.findData(assignment_expr.name)
             return variable.data.type_def
@@ -45,7 +51,7 @@ def checkForSubExpressions(variable_type, assignment_expr, scope):
 
 
 def checkLogical(variable_type, assigment_expr):
-    logicals = ['or', 'and', '<', '<=', '=', '>=', '>']
+    logicals = ['or', 'and', '<', '<=', '==', '>=', '>']
     if assigment_expr.op in logicals and variable_type != 'boolean':
         raise ValueError('Wrong type')
 

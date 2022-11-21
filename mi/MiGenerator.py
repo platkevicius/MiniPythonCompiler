@@ -39,9 +39,9 @@ class MiGenerator(Generator):
         if len(function.params) != len(ast.params):
             raise ValueError('param size is not equivalent')
 
-        for param in function.params:
-            param_type = FunctionDefinitions.findTypeForParam(function.name, param.name)
-            TypeCheck.checkTypeForVariable(param_type, param, scope)
+        for i in range(len(function.params)):
+            param_type = FunctionDefinitions.findTypeForParam(function.name, function.params[i].name)
+            TypeCheck.checkTypeForVariable(param_type, ast.params[i], scope)
 
         # free space for type
         if function.return_type is not None:
@@ -58,6 +58,8 @@ class MiGenerator(Generator):
         return_data = scope.findData('return')
         lop = self.getSpaceForType(return_data.data.type_def)
         offset = str(return_data.offset * 4)
+
+        TypeCheck.checkTypeForVariable(return_data.data.type_def, ast.expression, scope)
 
         self.generate(ast.expression, scope)
 
@@ -160,7 +162,6 @@ class MiGenerator(Generator):
             for statement in if_statement.else_statements:
                 self.generate(statement, local_scope)
 
-        print(local_scope.dataInStack)
         self.generated_code.append(continue_symbol + ":")
         self.generated_code.append(f'ADD W I {local_scope.getOffsetForLocalVariable() * 4}, SP')  # reset Stack Pointer
 

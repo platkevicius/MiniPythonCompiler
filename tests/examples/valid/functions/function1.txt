@@ -11,3 +11,4 @@ def fib(num: int) -> int:
   return fib(num - 1) + fib(num - 2)
 
 var erg: int = fib(7)
+var res: boolean = fib(7) >= fib(6)
