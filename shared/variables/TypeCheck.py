@@ -8,34 +8,40 @@ from syntaxTree.struct.StructResolve import StructResolve
 
 def checkTypeForVariable(variable_type, assignment_expr, scope):
     match assignment_expr:
+        # general check on type fast fail
         case BinaryOp():
             checkLogical(variable_type, assignment_expr)
             checkArithmetic(variable_type, assignment_expr)
-        case _:
-            checkForSubExpressions(variable_type, assignment_expr, scope)
+
+    var_type = checkForSubExpressions(variable_type, assignment_expr, scope)
+
+    if type(assignment_expr) != BinaryOp:
+        if var_type != variable_type:
+            raise ValueError('Wrong types')
 
 
 def checkForSubExpressions(variable_type, assignment_expr, scope):
     match assignment_expr:
-        #case BinaryOp():
-            #checkForSubExpressions(variable_type, assignment_expr.left, scope)
-            #checkForSubExpressions(variable_type, assignment_expr.right, scope)
+        case BinaryOp():
+            var_type1 = checkForSubExpressions(variable_type, assignment_expr.left, scope)
+            var_type2 = checkForSubExpressions(variable_type, assignment_expr.right, scope)
+
+            if var_type1 != var_type2:
+                raise ValueError('Wrong types')
+            return var_type1
         case VariableNode():
             variable = scope.findData(assignment_expr.name)
-            if variable_type != variable.data.type_def:
-                raise ValueError('Wrong type')
+            return variable.data.type_def
         case StructResolve():
             variable = scope.findData(assignment_expr.name)
-            if variable_type != StructDefinitions.findTypeForAttribute(variable.data.type_def, assignment_expr.attribute):
-                raise ValueError('Wrong type')
+            return StructDefinitions.findTypeForAttribute(variable.data.type_def, assignment_expr.attribute)
         case StructCreate():
-            if variable_type != assignment_expr.name:
-                raise ValueError('Wrong type')
+            return assignment_expr.name
         case Constant():
-            if (assignment_expr.value == 'true' or assignment_expr.value == 'false') and variable_type != 'boolean':
-                raise ValueError('Wrong type')
-            if type(assignment_expr.value) == int and variable_type != 'int':
-                raise ValueError('Wrong Type')
+            if assignment_expr.value == 'true' or assignment_expr.value == 'false':
+                return 'boolean'
+            if type(assignment_expr.value) == int:
+                return 'int'
 
 
 def checkLogical(variable_type, assigment_expr):
