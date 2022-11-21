@@ -51,8 +51,8 @@ class MiGenerator(Generator):
             expr = ast.params[i]
             self.generate(expr, scope)
 
-        self.generated_code.append('CALL ' + function.name)
-        self.generated_code.append('ADD W I ' + str(len(function.params) * 4) + ', SP')
+        self.generated_code.append(f'CALL {function.name}')
+        self.generated_code.append(f'ADD W I {len(function.params) * 4}, SP')
 
     def generateReturnStatement(self, ast, scope):
         return_data = scope.findData('return')
@@ -73,7 +73,7 @@ class MiGenerator(Generator):
         for definition in StructDefinitions.findDefinition(struct.name):
             offset += StructDefinitions.getOffsetForType(definition.type_def)
 
-        self.generated_code.append('ADD W I ' + str(offset) + ', hp')
+        self.generated_code.append(f'ADD W I {offset}, hp')
         self.generated_code.append('MOVE W R13, -!SP')
 
     def generateStructAssignment(self, struct, scope):
@@ -88,13 +88,13 @@ class MiGenerator(Generator):
         lop = self.getSpaceForType(type_def)
         attr_offset = str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute))
         variable_offset = str(variable.offset)
+        relative_register = self.getRelativeRegister(scope)
 
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append('MOVE ' + lop + ' !SP+, ' + attr_offset + ' +!R' + variable_offset)
+                self.generated_code.append(f'MOVE {lop} !SP+, {attr_offset}+!R{variable_offset}')
             case Location.STACK:
-                self.generated_code.append(
-                    'MOVE ' + lop + ' !SP+, ' + attr_offset + ' !(-' + str(variable.offset * 4) + '+!R12)')
+                self.generated_code.append(f'MOVE {lop} !SP+, {attr_offset}!({variable.offset * 4}+!R{relative_register})')
 
     def generateStructResolve(self, struct, scope):
         variable = scope.findData(struct.name)
@@ -105,13 +105,15 @@ class MiGenerator(Generator):
         lop = self.getSpaceForType(type_def)
         attr_offset = str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute))
         variable_offset = str(variable.offset)
+        relative_register = self.getRelativeRegister(scope)
 
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append('MOVE ' + lop + ' ' + attr_offset + '+!R' + variable_offset + ', -!SP')
+                self.generated_code.append(f'MOVE {lop} {attr_offset}+!R{variable_offset}, -!SP')
             case Location.STACK:
                 self.generated_code.append(
-                    'MOVE ' + lop + ' ' + attr_offset + ' !(-' + str(variable.offset * 4) + '+!R12), -!SP')
+                    f'MOVE {lop} {attr_offset}!({variable.offset * 4}+!R{relative_register}), -!SP'
+                )
 
     def generateLoopStatement(self, while_statement, scope):
         local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
@@ -129,14 +131,12 @@ class MiGenerator(Generator):
         for statement in while_statement.statements:
             self.generate(statement, local_scope)
 
-        self.generated_code.append(
-            'ADD W I ' + str(local_scope.getOffsetForLocalVariable() * 4) + ', SP')  # reset Stack Pointer
+        self.generated_code.append(f'ADD W I {local_scope.getOffsetForLocalVariable() * 4}, SP')  # reset Stack Pointer
         self.generated_code.append('JUMP ' + while_symbol)
 
         self.generated_code.append('')  # formatting
         self.generated_code.append(continue_symbol + ":")
-        self.generated_code.append(
-            'ADD W I ' + str(local_scope.getOffsetForLocalVariable() * 4) + ', SP')  # reset Stack Pointer
+        self.generated_code.append(f'ADD W I {local_scope.getOffsetForLocalVariable() * 4}, SP')  # reset Stack Pointer
 
     def generateIfStatement(self, if_statement, scope):
         local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
@@ -155,15 +155,14 @@ class MiGenerator(Generator):
             self.generate(statement, local_scope)
 
         if has_else:
-            self.generated_code.append('JUMP ' + continue_symbol)
+            self.generated_code.append(f'JUMP {continue_symbol}')
             self.generated_code.append(else_symbol + ': ')
             for statement in if_statement.else_statements:
                 self.generate(statement, local_scope)
 
         print(local_scope.dataInStack)
         self.generated_code.append(continue_symbol + ":")
-        self.generated_code.append(
-                'ADD W I ' + str(local_scope.getOffsetForLocalVariable() * 4) + ', SP')  # reset Stack Pointer
+        self.generated_code.append(f'ADD W I {local_scope.getOffsetForLocalVariable() * 4}, SP')  # reset Stack Pointer
 
     def generateVariableCreation(self, variable_creation, scope):
         name = variable_creation.name
@@ -175,7 +174,7 @@ class MiGenerator(Generator):
 
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append('MOVE ' + self.getSpaceForType(type_def) + ' !SP, R' + str(variable.offset))
+                self.generated_code.append(f'MOVE {self.getSpaceForType(type_def)} !SP, R{variable.offset}')
             case Location.STACK:
                 self.generated_code.append('SUB W I 4, SP')
 
@@ -260,14 +259,14 @@ class MiGenerator(Generator):
         self.generated_code.append('SUB W !SP, 4+!SP')
         self.generated_code.append('ADD W I 4, SP')
         self.generated_code.append('CMP W !SP, I 0')
-        self.generated_code.append(mappings.get(op) + ' ' + symbol)
+        self.generated_code.append(f'{mappings.get(op)} {symbol}')
         self.generated_code.append('MOVE W I 0, !SP')
-        self.generated_code.append('JUMP ' + symbol_continue)
+        self.generated_code.append(f'JUMP {symbol_continue}')
         self.generated_code.append('')
-        self.generated_code.append(symbol + ':')
+        self.generated_code.append(f'{symbol}:')
         self.generated_code.append('MOVE W I 1, !SP')
         self.generated_code.append('')
-        self.generated_code.append(symbol_continue + ':')
+        self.generated_code.append(f'{symbol_continue}:')
 
     def generateConstant(self, constant):
         if constant.value == 'true':
@@ -275,7 +274,7 @@ class MiGenerator(Generator):
         elif constant.value == 'false':
             self.generated_code.append('MOVE W I 0, -!SP')
         else:
-            self.generated_code.append('MOVE W I ' + str(constant.value) + ', -!SP')
+            self.generated_code.append(f'MOVE W I {constant.value}, -!SP')
 
     def generateInit(self):
         return '''
