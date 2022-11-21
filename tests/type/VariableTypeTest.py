@@ -103,6 +103,7 @@ class VariableTypeTest(unittest.TestCase):
 
         ast = createAstForTest(grammar, script)
         gen = MiGenerator(ast, DataAllocator(None, 0, 0))
+
         self.assertRaises(ValueError, gen.generateMachineCode)
 
 

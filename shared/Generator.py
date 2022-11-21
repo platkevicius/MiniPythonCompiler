@@ -5,6 +5,7 @@ from syntaxTree.expression.VariableNode import VariableNode
 from syntaxTree.function.FunctionCall import FunctionCall
 from syntaxTree.function.FunctionCreate import FunctionCreate
 from syntaxTree.statement.IfStatement import IfStatement
+from syntaxTree.statement.ReturnStatement import ReturnStatement
 from syntaxTree.statement.VariableAssignment import VariableAssignment
 from syntaxTree.statement.VariableCreation import VariableCreation
 from syntaxTree.statement.LoopStatement import LoopStatement
@@ -22,7 +23,20 @@ class Generator:
         self.generated_code = []
 
     def generateMachineCode(self):
+        definitions = []
+        for goal in self.goals:
+            if type(goal) is FunctionCreate or type(goal) is StructNode:
+                definitions.append(goal)
+
         self.generated_code.append(self.generateInit())
+
+        self.generated_code.append('JUMP start')
+
+        for definition in definitions:
+            self.generate(definition, self.scope)
+
+        self.generated_code.append('start:')
+        self.goals = [x for x in self.goals if x not in definitions]
         for goal in self.goals:
             self.generate(goal, self.scope)
         self.generated_code.append('HALT')
@@ -34,6 +48,8 @@ class Generator:
             self.generateFunctionCreate(ast, scope)
         if type(ast) is FunctionCall:
             self.generateFunctionCall(ast, scope)
+        if type(ast) is ReturnStatement:
+            self.generateReturnStatement(ast, scope)
         if type(ast) is StructNode:
             self.generateStruct(ast)
         if type(ast) is StructCreate:
@@ -61,6 +77,9 @@ class Generator:
         pass
 
     def generateFunctionCall(self, ast, scope):
+        pass
+
+    def generateReturnStatement(self, ast, scope):
         pass
 
     def generateStruct(self, ast):

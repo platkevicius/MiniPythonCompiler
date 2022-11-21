@@ -1,3 +1,4 @@
+from mi.FunctionEnvironment import FunctionEnvironment
 from shared.Generator import Generator
 from shared.function import FunctionDefinitions
 from shared.function.Function import Function
@@ -19,15 +20,18 @@ class MiGenerator(Generator):
 
         FunctionDefinitions.addDefinition(Function(name, params, return_type))
 
-        # (todo: this has to be implemented differntly!)
-        param_scope = DataAllocator(scope, 12, 16)  # 12 so no data is being put into the registers and 16 for stack because of saved registers
+        param_scope = FunctionEnvironment(scope)
 
         for param in ast.params_list:
-            param_scope.addData(param)
+            param_scope.addParam(param)
+        param_scope.addParam(Variable('return', return_type))
 
+        body_scope = FunctionEnvironment(param_scope)
         self.generated_code.append(name + ': ')
+        self.generated_code.append('PUSHR')
+        self.generated_code.append('MOVE W SP, R11')
         for statement in ast.statements:
-            self.generate(statement, param_scope)
+            self.generate(statement, body_scope)
 
     def generateFunctionCall(self, ast, scope):
         function = FunctionDefinitions.findDefinition(ast.name)
@@ -39,12 +43,28 @@ class MiGenerator(Generator):
             param_type = FunctionDefinitions.findTypeForParam(function.name, param.name)
             TypeCheck.checkTypeForVariable(param_type, param, scope)
 
+        # free space for type
+        if function.return_type is not None:
+            self.generated_code.append('CLEAR W -!SP')  # todo: type needs to be added
+
         for i in range(len(function.params) - 1, -1, -1):
             expr = ast.params[i]
             self.generate(expr, scope)
 
         self.generated_code.append('CALL ' + function.name)
         self.generated_code.append('ADD W I ' + str(len(function.params) * 4) + ', SP')
+
+    def generateReturnStatement(self, ast, scope):
+        return_data = scope.findData('return')
+        lop = self.getSpaceForType(return_data.data.type_def)
+        offset = str(return_data.offset * 4)
+
+        self.generate(ast.expression, scope)
+
+        self.generated_code.append(f'MOVE {lop} !SP+, {offset}+!R11')
+        self.generated_code.append('MOVE W R11, SP')  # reset Stack Pointer
+        self.generated_code.append('POPR')
+        self.generated_code.append('RET')
 
     def generateStructCreate(self, struct):
         self.generated_code.append('MOVE W hp, R13')
@@ -109,12 +129,14 @@ class MiGenerator(Generator):
         for statement in while_statement.statements:
             self.generate(statement, local_scope)
 
-        self.generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Stack Pointer
+        self.generated_code.append(
+            'ADD W I ' + str(local_scope.getOffsetForLocalVariable() * 4) + ', SP')  # reset Stack Pointer
         self.generated_code.append('JUMP ' + while_symbol)
 
         self.generated_code.append('')  # formatting
         self.generated_code.append(continue_symbol + ":")
-        self.generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Stack Pointer
+        self.generated_code.append(
+            'ADD W I ' + str(local_scope.getOffsetForLocalVariable() * 4) + ', SP')  # reset Stack Pointer
 
     def generateIfStatement(self, if_statement, scope):
         local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
@@ -138,9 +160,10 @@ class MiGenerator(Generator):
             for statement in if_statement.else_statements:
                 self.generate(statement, local_scope)
 
+        print(local_scope.dataInStack)
         self.generated_code.append(continue_symbol + ":")
-        if local_scope.getDataInStack() != 0:
-            self.generated_code.append('ADD W I ' + str(local_scope.getDataInStack() * 4) + ', SP')  # reset Stack Pointer
+        self.generated_code.append(
+                'ADD W I ' + str(local_scope.getOffsetForLocalVariable() * 4) + ', SP')  # reset Stack Pointer
 
     def generateVariableCreation(self, variable_creation, scope):
         name = variable_creation.name
@@ -163,29 +186,32 @@ class MiGenerator(Generator):
         self.generate(variable_assignment.value, scope)
         variable = scope.findData(name)
         type_def = variable.data.type_def
+        lop = self.getSpaceForType(type_def)
 
         TypeCheck.checkTypeForVariable(variable.data.type_def, variable_assignment.value, scope)
 
+        relative_register = self.getRelativeRegister(scope)
+
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append('MOVE ' + self.getSpaceForType(type_def) + ' !SP, R' + str(variable.offset))
+                self.generated_code.append(f'MOVE {lop} !SP, R{variable.offset}')
             case Location.STACK:
-                self.generated_code.append(
-                    'MOVE ' + self.getSpaceForType(type_def) + ' !SP, -' + str(variable.offset * 4) + '+!R12')
+                self.generated_code.append(f'MOVE {lop} !SP, {variable.offset * 4}+!{relative_register}')
 
         self.generated_code.append('ADD W I 4, SP')
 
     def generateResolveVariable(self, variable, scope):
         variable = scope.findData(variable.name)
         type_def = variable.data.type_def
+        lop = self.getSpaceForType(type_def)
+
+        relative_register = self.getRelativeRegister(scope)
 
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append('MOVE ' + self.getSpaceForType(type_def) + ' R' + str(variable.offset)
-                                           + ', -!SP')
+                self.generated_code.append(f'MOVE {lop} R{variable.offset}, -!SP')
             case Location.STACK:
-                self.generated_code.append(
-                    'MOVE ' + self.getSpaceForType(type_def) + ' -' + str(variable.offset * 4) + '+!R12, -!SP')
+                self.generated_code.append(f'MOVE {lop} {variable.offset * 4}+!{relative_register}, -!SP')
 
     def generateBinaryOp(self, binary_op, scope):
         self.generate(binary_op.left, scope)
@@ -227,7 +253,7 @@ class MiGenerator(Generator):
                     ">=": "JGE",
                     "==": "JEQ",
                     "<=": "JLE",
-                    "<": "JLE"}
+                    "<": "JLT"}
         symbol = createNewSymbol('logicalTrue')
         symbol_continue = createNewSymbol('continue')
 
@@ -235,43 +261,47 @@ class MiGenerator(Generator):
         self.generated_code.append('ADD W I 4, SP')
         self.generated_code.append('CMP W !SP, I 0')
         self.generated_code.append(mappings.get(op) + ' ' + symbol)
-        self.generated_code.append('MOVE B I 0, !SP')
+        self.generated_code.append('MOVE W I 0, !SP')
         self.generated_code.append('JUMP ' + symbol_continue)
         self.generated_code.append('')
         self.generated_code.append(symbol + ':')
-        self.generated_code.append('MOVE B I 1, !SP')
+        self.generated_code.append('MOVE W I 1, !SP')
         self.generated_code.append('')
         self.generated_code.append(symbol_continue + ':')
 
     def generateConstant(self, constant):
         if constant.value == 'true':
-            self.generated_code.append('MOVE B I 1, -!SP')
+            self.generated_code.append('MOVE W I 1, -!SP')
         elif constant.value == 'false':
-            self.generated_code.append('MOVE B I 0, -!SP')
+            self.generated_code.append('MOVE W I 0, -!SP')
         else:
             self.generated_code.append('MOVE W I ' + str(constant.value) + ', -!SP')
 
     def generateInit(self):
         return '''
-    SEG
-    MOVE W I H'10000', SP
-    MOVE W I H'10000', R12
-    MOVEA heap, hp
-    
-    start:'''
+SEG
+MOVE W I H'10000', SP
+MOVE W I H'10000', R12
+MOVEA heap, hp
+    '''
 
     def generateHeap(self):
         return '''
-    hp: RES 4
-    heap: RES 0'''
+hp: RES 4
+heap: RES 0'''
 
     def getSpaceForType(self, type_def):
         match type_def:
             case 'int':
                 return 'W'
-            case 'boolean':
-                return 'B'
             case 'float':
                 return 'F'
             case _:
                 return 'W'
+
+    def getRelativeRegister(self, scope):
+        match scope:
+            case DataAllocator():
+                return 'R12'
+            case FunctionEnvironment():
+                return 'R11'

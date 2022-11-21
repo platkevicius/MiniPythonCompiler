@@ -14,15 +14,15 @@ class DataAllocator:
     def addData(self, data):
         if data.name in self.register or data.name in self.stack:
             raise ValueError('There is already declaration with the name: ' + data.name)
-        if self.dataInRegister != 12:
+        if self.dataInRegister != 11:
             var = Data(data, self.dataInRegister, Location.REGISTER)
             self.register[data.name] = var
             self.dataInRegister += 1
             return var
         else:
-            var = Data(data, self.dataInStack, Location.STACK)
-            self.stack[data.name] = var
             self.dataInStack += 1
+            var = Data(data, -self.dataInStack, Location.STACK)
+            self.stack[data.name] = var
             return var
 
     def findData(self, name):
@@ -44,6 +44,9 @@ class DataAllocator:
             raise NameError('There is no Variable with name: ' + str(name) + '.')
 
     def getDataInStack(self):
+        return self.dataInStack
+
+    def getOffsetForLocalVariable(self):
         if self.parent is None:
             return self.dataInStack
         else:

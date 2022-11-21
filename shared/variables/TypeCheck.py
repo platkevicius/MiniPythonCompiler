@@ -11,14 +11,15 @@ def checkTypeForVariable(variable_type, assignment_expr, scope):
         case BinaryOp():
             checkLogical(variable_type, assignment_expr)
             checkArithmetic(variable_type, assignment_expr)
-    checkForSubExpressions(variable_type, assignment_expr, scope)
+        case _:
+            checkForSubExpressions(variable_type, assignment_expr, scope)
 
 
 def checkForSubExpressions(variable_type, assignment_expr, scope):
     match assignment_expr:
-        case BinaryOp():
-            checkForSubExpressions(variable_type, assignment_expr.left, scope)
-            checkForSubExpressions(variable_type, assignment_expr.right, scope)
+        #case BinaryOp():
+            #checkForSubExpressions(variable_type, assignment_expr.left, scope)
+            #checkForSubExpressions(variable_type, assignment_expr.right, scope)
         case VariableNode():
             variable = scope.findData(assignment_expr.name)
             if variable_type != variable.data.type_def:

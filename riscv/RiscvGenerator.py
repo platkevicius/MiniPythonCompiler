@@ -79,12 +79,12 @@ class RiscvGenerator(Generator):
         for statement in while_statement.statements:
             self.generate(statement, local_scope)
 
-        self.generated_code.append('addi sp, sp, ' + str(local_scope.getDataInStack() * 4))  # reset Stack Pointer
+        self.generated_code.append('addi sp, sp, ' + str(local_scope.getOffsetForLocalVariable() * 4))  # reset Stack Pointer
         self.generated_code.append('j ' + while_symbol)
 
         self.generated_code.append('')  # formatting
         self.generated_code.append(continue_symbol + ":")
-        self.generated_code.append('addi sp, sp, ' + str(local_scope.getDataInStack() * 4))  # reset Stack Pointer
+        self.generated_code.append('addi sp, sp, ' + str(local_scope.getOffsetForLocalVariable() * 4))  # reset Stack Pointer
 
     def generateIfStatement(self, if_statement, scope):
         local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
@@ -111,7 +111,7 @@ class RiscvGenerator(Generator):
 
         self.generated_code.append('')  # formatting
         self.generated_code.append(continue_symbol + ":")
-        self.generated_code.append('addi sp, sp, ' + str(local_scope.getDataInStack() * 4))  # reset Stack Pointer
+        self.generated_code.append('addi sp, sp, ' + str(local_scope.getOffsetForLocalVariable() * 4))  # reset Stack Pointer
 
     def generateVariableCreation(self, variable_creation, scope):
         name = variable_creation.name
