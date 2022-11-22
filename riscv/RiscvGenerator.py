@@ -18,7 +18,7 @@ class RiscvGenerator(Generator):
         for definition in StructDefinitions.findDefinition(struct.name):
             offset += StructDefinitions.getOffsetForType(definition.type_def)
 
-        self.generated_code.append('addi t6, t6, ' + str(offset))
+        self.generated_code.append(f'addi t6, t6, {offset}')
         self.generated_code.append('addi sp, sp, -4')
         self.generated_code.append('sw t6, 0(sp)')
 
@@ -36,12 +36,12 @@ class RiscvGenerator(Generator):
 
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append('l' + lop + ' t0, 0(sp)')
-                self.generated_code.append('s' + lop + ' t0, ' + attr_offset + '(s' + str(variable.offset - 1) + ')')
+                self.generated_code.append(f'l{lop} t0, 0(sp)')
+                self.generated_code.append(f's{lop} t0, {attr_offset}(s{variable.offset - 1})')
             case Location.STACK:
-                self.generated_code.append('l' + lop + ' t0, 0(sp)')
-                self.generated_code.append('l' + lop + ' t1, -' + str(variable.offset * 4) + '(fp)')
-                self.generated_code.append('s' + lop + ' t0, ' + attr_offset + '(t1)')
+                self.generated_code.append(f'l{lop} t0, 0(sp)')
+                self.generated_code.append(f'l{lop} t1, {variable.offset * 4}(fp)')
+                self.generated_code.append(f's{lop} t0, {attr_offset}(t1)')
 
     def generateStructResolve(self, struct, scope):
         variable = scope.findData(struct.name)
@@ -54,37 +54,39 @@ class RiscvGenerator(Generator):
 
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append('l' + lop + ' t0, ' + attr_offset + '(s' + str(variable.offset - 1) + ')')
+                self.generated_code.append(f'l{lop} t0, {attr_offset}(s{variable.offset - 1})')
                 self.generated_code.append('addi sp, sp, -4')
-                self.generated_code.append('s' + lop + ' t0, 0(sp)')
+                self.generated_code.append(f's{lop} t0, 0(sp)')
             case Location.STACK:
-                self.generated_code.append('l' + lop + ' (-' + str(variable.offset * 4) + '(fp), t0')
+                self.generated_code.append(f'l{lop} ({variable.offset * 4}(fp)), t0')
                 self.generated_code.append('addi sp, sp, -4')
-                self.generated_code.append('s' + lop + ' ' + attr_offset + '(t0), (sp)')
+                self.generated_code.append(f's{lop} {attr_offset}(t0), (sp)')
 
     def generateLoopStatement(self, while_statement, scope):
         local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
         while_symbol = createNewSymbol('while')
         continue_symbol = createNewSymbol('continue')
 
+        local_variable_offset = local_scope.getOffsetForLocalVariable() * 4
+
         self.generated_code.append('')  # formatting
-        self.generated_code.append(while_symbol + ':')
+        self.generated_code.append(f'{while_symbol}:')
         self.generate(while_statement.condition, local_scope)
 
         self.generated_code.append('lw t0, 0(sp)')
         self.generated_code.append('addi t1, zero, 1')  # for comparing if statement
         self.generated_code.append('addi sp, sp, 4')  # reset Stack Pointer from logical calculation in Stack
-        self.generated_code.append('bne t0, t1, ' + continue_symbol)
+        self.generated_code.append(f'bne t0, t1, {continue_symbol}')
 
         for statement in while_statement.statements:
             self.generate(statement, local_scope)
 
-        self.generated_code.append('addi sp, sp, ' + str(local_scope.getOffsetForLocalVariable() * 4))  # reset Stack Pointer
-        self.generated_code.append('j ' + while_symbol)
+        self.generated_code.append(f'addi sp, sp, {local_variable_offset}')  # reset Stack Pointer
+        self.generated_code.append(f'j {while_symbol}')
 
         self.generated_code.append('')  # formatting
-        self.generated_code.append(continue_symbol + ":")
-        self.generated_code.append('addi sp, sp, ' + str(local_scope.getOffsetForLocalVariable() * 4))  # reset Stack Pointer
+        self.generated_code.append(f'{continue_symbol}:')
+        self.generated_code.append(f'addi sp, sp, {local_variable_offset}')  # reset Stack Pointer
 
     def generateIfStatement(self, if_statement, scope):
         local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
@@ -92,6 +94,7 @@ class RiscvGenerator(Generator):
         continue_symbol = createNewSymbol('continue')
 
         has_else = len(if_statement.else_statements) != 0
+        local_variable_offset = local_scope.getOffsetForLocalVariable() * 4
 
         self.generate(if_statement.condition, scope)
         self.generated_code.append('lw t0, 0(sp)')
@@ -104,14 +107,14 @@ class RiscvGenerator(Generator):
             self.generate(statement, local_scope)
 
         if has_else:
-            self.generated_code.append('j ' + continue_symbol)
-            self.generated_code.append(else_symbol + ': ')
+            self.generated_code.append(f'j {continue_symbol}')
+            self.generated_code.append(f'{else_symbol}:')
             for statement in if_statement.else_statements:
                 self.generate(statement, local_scope)
 
         self.generated_code.append('')  # formatting
-        self.generated_code.append(continue_symbol + ":")
-        self.generated_code.append('addi sp, sp, ' + str(local_scope.getOffsetForLocalVariable() * 4))  # reset Stack Pointer
+        self.generated_code.append(f'{continue_symbol}:')
+        self.generated_code.append(f'addi sp, sp, {local_variable_offset}')  # reset Stack Pointer
 
     def generateVariableCreation(self, variable_creation, scope):
         name = variable_creation.name
@@ -124,7 +127,7 @@ class RiscvGenerator(Generator):
 
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append('add  s' + str(variable.offset - 1) + ', t0, zero')
+                self.generated_code.append(f'add s{variable.offset - 1}, t0, zero')
                 self.generated_code.append('addi sp, sp, 4')  # reset stack pointer
             case Location.STACK:
                 self.generated_code.append('sw t0, 0(sp)')
@@ -139,24 +142,27 @@ class RiscvGenerator(Generator):
 
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append('add  s' + str(variable.offset - 1) + ', t0, zero')
+                self.generated_code.append(f'add s{variable.offset - 1}, t0, zero')
                 self.generated_code.append('addi sp, sp, 4')  # reset stack pointer
             case Location.STACK:
-                self.generated_code.append('s' + self.getSpaceForType(type_def) + ' t0, -' + str(variable.offset * 4) + '(fp)')
+                lop = self.getSpaceForType(type_def)
+                self.generated_code.append(f's{lop} t0, {variable.offset * 4}(fp)')
 
     def generateResolveVariable(self, variable, scope):
         variable = scope.findData(variable.name)
         type_def = variable.data.type_def
 
+        lop = self.getSpaceForType(type_def)
+
         self.generated_code.append('addi sp, sp, -4')
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append('s' + self.getSpaceForType(type_def) + ' s' + str(variable.offset - 1) + ', 0(sp)')
-                self.generated_code.append('l' + self.getSpaceForType(type_def) + ' t0, 0(sp)')
+                self.generated_code.append(f's{lop} s{variable.offset - 1}, 0(sp)')
+                self.generated_code.append(f'l{lop} t0, 0(sp)')
             case Location.STACK:
-                self.generated_code.append('l' + self.getSpaceForType(type_def) + ' t0, -' + str(variable.offset * 4) + '(fp)')
-                self.generated_code.append('s' + self.getSpaceForType(type_def) + ' t0, 0(sp)')
-                self.generated_code.append('l' + self.getSpaceForType(type_def) + ' t0, 0(sp)')
+                self.generated_code.append(f'l{lop} t0, {variable.offset * 4}(fp)')
+                self.generated_code.append(f's{lop} t0, 0(sp)')
+                self.generated_code.append(f'l{lop} t0, 0(sp)')
 
     def generateBinaryOp(self, binary_op, scope):
         self.generate(binary_op.left, scope)
@@ -208,7 +214,7 @@ class RiscvGenerator(Generator):
         self.generated_code.append('lw t0, 4(sp)')
         self.generated_code.append('lw t1, 0(sp)')
 
-        self.generated_code.append(mappings.get(op) + ' t0, t0, t1')
+        self.generated_code.append(f'{mappings.get(op)} t0, t0, t1')
         self.generated_code.append('addi sp, sp, 8')
         self.generated_code.append('addi sp, sp, -4')
         self.generated_code.append('sw t0, 0(sp)')
@@ -226,16 +232,16 @@ class RiscvGenerator(Generator):
         self.generated_code.append('lw t1, 0(sp)')
         self.generated_code.append('addi sp, sp, 8')
         self.generated_code.append('addi sp, sp, -4')
-        self.generated_code.append(mappings.get(op) + ' t0, t1, ' + symbol)
+        self.generated_code.append(f'{mappings.get(op)} t0, t1, {symbol}')
         self.generated_code.append('add t0, zero, zero')
         self.generated_code.append('sb t0, 0(sp)')
-        self.generated_code.append('j ' + symbol_continue)
+        self.generated_code.append(f'j {symbol_continue}')
         self.generated_code.append('')
-        self.generated_code.append(symbol + ':')
+        self.generated_code.append(f'{symbol}:')
         self.generated_code.append('addi t0, zero, 1')
         self.generated_code.append('sb t0, 0(sp)')
         self.generated_code.append('')
-        self.generated_code.append(symbol_continue + ':')
+        self.generated_code.append(f'{symbol_continue}:')
 
     def generateConstant(self, constant):
         if constant.value == 'true':
@@ -248,7 +254,7 @@ class RiscvGenerator(Generator):
             self.generated_code.append('sw t0, 0(sp)')
         else:
             self.generated_code.append('addi sp, sp, -4')
-            self.generated_code.append('addi t0, zero, ' + str(constant.value))
+            self.generated_code.append(f'addi t0, zero, {constant.value}')
             self.generated_code.append('sw t0, 0(sp)')
 
     def generateInit(self):
@@ -268,7 +274,5 @@ class RiscvGenerator(Generator):
         match type_def:
             case 'int':
                 return 'w'
-            case 'boolean':
-                return 'b'
             case _:
                 return 'w'
