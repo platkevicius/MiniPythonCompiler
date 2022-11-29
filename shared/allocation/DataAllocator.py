@@ -32,11 +32,6 @@ class DataAllocator:
         if register_data is not None:
             return register_data
         elif stack_data is not None:
-            offset = 1
-            if self.parent is not None:
-                offset = self.parent.dataInStack
-
-            stack_data.offset = offset + stack_data.offset
             return stack_data
         elif self.parent is not None:
             return self.parent.findData(name)
@@ -51,3 +46,9 @@ class DataAllocator:
             return self.dataInStack
         else:
             return self.dataInStack - self.parent.dataInStack
+
+    def isInFunction(self):
+        if self.parent is None:
+            return False
+        else:
+            return self.parent.isInFunction()

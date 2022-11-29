@@ -51,3 +51,6 @@ class FunctionEnvironment:
             return self.dataInStack
         else:
             return self.dataInStack - self.parent.dataInStack
+
+    def isInFunction(self):
+        return True

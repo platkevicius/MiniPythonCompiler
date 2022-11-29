@@ -176,10 +176,7 @@ class MiGenerator(Generator):
         match variable.location:
             case Location.REGISTER:
                 self.generated_code.append(f'MOVE {self.getSpaceForType(type_def)} !SP, R{variable.offset}')
-            case Location.STACK:
-                self.generated_code.append('SUB W I 4, SP')
-
-        self.generated_code.append('ADD W I 4, SP')  # reset stack pointer
+                self.generated_code.append('ADD W I 4, SP')
 
     def generateVariableAssignment(self, variable_assignment, scope):
         name = variable_assignment.name
@@ -300,8 +297,8 @@ heap: RES 0'''
                 return 'W'
 
     def getRelativeRegister(self, scope):
-        match scope:
-            case DataAllocator():
+        match scope.isInFunction():
+            case False:
                 return 'R12'
-            case FunctionEnvironment():
+            case True:
                 return 'R11'

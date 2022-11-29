@@ -1,3 +1,7 @@
+struct Pair:
+    a: int,
+    b: int
+
 def fib(num: int) -> int:
   if num < 1:
     return -1
@@ -10,5 +14,16 @@ def fib(num: int) -> int:
 
   return fib(num - 1) + fib(num - 2)
 
-var erg: int = fib(7)
+def fibTwo(num: int) -> int:
+    var a: int = 0
+    var b: int = 1
+
+    for i in range(0, num):
+        var temp: int = b
+        b = a + b
+        a = temp
+
+    return b
+
+var erg: int = fibTwo(7)
 var res: boolean = fib(7) >= fib(6)

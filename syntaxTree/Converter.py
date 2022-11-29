@@ -160,7 +160,12 @@ def parse_tree_to_ast(e):
         return_type = e.children[2].data
 
         for i in range(3, len(e.children)):
-            statements.append(parse_tree_to_ast(e.children[i]))
+            gen = parse_tree_to_ast(e.children[i])
+
+            if type(gen) == list:
+                statements.extend(gen)
+            else:
+                statements.append(gen)
 
         return FunctionCreate(name, params, return_type, statements)
     elif e.data == 'function_call':
