@@ -125,7 +125,7 @@ def parse_tree_to_ast(e):
 
         varCreate = VariableCreation(e.children[0], 'int', parse_tree_to_ast(e.children[1]))
         whileStmt = LoopStatement(
-                    BinaryOp(VariableNode(e.children[0]), '<=', parse_tree_to_ast(e.children[2])),
+                    BinaryOp(VariableNode(e.children[0]), '<', parse_tree_to_ast(e.children[2])),
                     statements)
 
         return [varCreate, whileStmt]
