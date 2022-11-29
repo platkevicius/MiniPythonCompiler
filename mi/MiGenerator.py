@@ -96,7 +96,8 @@ class MiGenerator(Generator):
             case Location.REGISTER:
                 self.generated_code.append(f'MOVE {lop} !SP+, {attr_offset}+!R{variable_offset}')
             case Location.STACK:
-                self.generated_code.append(f'MOVE {lop} !SP+, {attr_offset}!({variable.offset * 4}+!R{relative_register})')
+                self.generated_code.append(f'MOVE W {variable.offset * 4}+!{relative_register}, R10')
+                self.generated_code.append(f'MOVE {lop} !SP+, {attr_offset}+!R10')
 
     def generateStructResolve(self, struct, scope):
         variable = scope.findData(struct.name)
@@ -113,9 +114,9 @@ class MiGenerator(Generator):
             case Location.REGISTER:
                 self.generated_code.append(f'MOVE {lop} {attr_offset}+!R{variable_offset}, -!SP')
             case Location.STACK:
+                self.generated_code.append(f'MOVE W {variable.offset * 4}+!{relative_register}, R10')
                 self.generated_code.append(
-                    f'MOVE {lop} {attr_offset}!({variable.offset * 4}+!R{relative_register}), -!SP'
-                )
+                    f'MOVE {lop} {attr_offset}+!R10, -!SP')
 
     def generateLoopStatement(self, while_statement, scope):
         local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)

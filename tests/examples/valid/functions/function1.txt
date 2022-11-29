@@ -25,5 +25,17 @@ def fibTwo(num: int) -> int:
 
     return b
 
-var erg: int = fibTwo(7)
+def fibThree(num: int) -> int:
+    var pair: Pair = new Pair()
+    pair.a = 0
+    pair.b = 1
+
+    for i in range(0, num):
+        var temp: int = pair.b
+        pair.b = pair.a + pair.b
+        pair.a = temp
+
+    return pair.b
+
+var erg: int = fibThree(7)
 var res: boolean = fib(7) >= fib(6)
