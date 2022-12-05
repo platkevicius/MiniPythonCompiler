@@ -4,12 +4,33 @@ from shared.variables import TypeCheck
 from shared.variables.Variable import Variable
 from shared.allocation.DataAllocator import *
 from shared.SymbolGenerator import createNewSymbol
+from syntaxTree.function.FunctionCreate import FunctionCreate
+from syntaxTree.struct.StructNode import StructNode
 
 
 class RiscvGenerator(Generator):
     def __init__(self, goals, scope):
         self.generated_code = []
         super().__init__(goals, scope)
+
+    def generateMachineCode(self):
+        definitions = []
+        for goal in self.goals:
+            if type(goal) is FunctionCreate or type(goal) is StructNode:
+                definitions.append(goal)
+
+        self.generated_code.append(self.generateInit())
+
+        self.generated_code.append('j start')
+
+        for definition in definitions:
+            self.generate(definition, self.scope)
+
+        self.generated_code.append('start:')
+        self.goals = [x for x in self.goals if x not in definitions]
+        for goal in self.goals:
+            self.generate(goal, self.scope)
+        return self.generated_code
 
     def generateStructCreate(self, struct):
         self.generated_code.append('mv t0, t6')
@@ -259,12 +280,12 @@ class RiscvGenerator(Generator):
 
     def generateInit(self):
         return '''
-    .section .text
-    .global __start
+.section .text
+.global __start
     
-    __start:
-    mv fp, sp
-    mv t6, gp     
+__start:
+mv fp, sp
+mv t6, gp     
     '''
 
     def generateHeap(self):

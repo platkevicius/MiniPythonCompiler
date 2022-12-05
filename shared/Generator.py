@@ -23,25 +23,7 @@ class Generator:
         self.generated_code = []
 
     def generateMachineCode(self):
-        definitions = []
-        for goal in self.goals:
-            if type(goal) is FunctionCreate or type(goal) is StructNode:
-                definitions.append(goal)
-
-        self.generated_code.append(self.generateInit())
-
-        self.generated_code.append('JUMP start')
-
-        for definition in definitions:
-            self.generate(definition, self.scope)
-
-        self.generated_code.append('start:')
-        self.goals = [x for x in self.goals if x not in definitions]
-        for goal in self.goals:
-            self.generate(goal, self.scope)
-        self.generated_code.append('HALT')
-        self.generated_code.append(self.generateHeap())
-        return self.generated_code
+        pass
 
     def generate(self, ast, scope):
         if type(ast) is FunctionCreate:

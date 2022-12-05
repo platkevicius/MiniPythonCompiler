@@ -1,31 +1,11 @@
+var erg: int = fib(7)
+var res: boolean = fib(7) >= fib(6)
+
 struct Pair:
     a: int,
     b: int
 
 def fib(num: int) -> int:
-  if num < 1:
-    return -1
-
-  if num == 1:
-    return 1
-
-  if num == 2:
-    return 2
-
-  return fib(num - 1) + fib(num - 2)
-
-def fibTwo(num: int) -> int:
-    var a: int = 0
-    var b: int = 1
-
-    for i in range(0, num):
-        var temp: int = b
-        b = a + b
-        a = temp
-
-    return b
-
-def fibThree(num: int) -> int:
     var pair: Pair = new Pair()
     pair.a = 0
     pair.b = 1
@@ -35,7 +15,7 @@ def fibThree(num: int) -> int:
         pair.b = pair.a + pair.b
         pair.a = temp
 
-    return pair.b
-
-var erg: int = fibThree(7)
-var res: boolean = fib(7) >= fib(6)
+    if pair.b >= 60:
+        return 30
+    else:
+        return pair.b
