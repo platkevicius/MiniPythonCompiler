@@ -61,6 +61,7 @@ class RiscvGenerator(Generator):
                 self.generated_code.append(f's{lop} t0, {attr_offset}(s{variable.offset - 1})')
             case Location.STACK:
                 self.generated_code.append(f'l{lop} t0, 0(sp)')
+                self.generated_code.append('addi sp, sp, 4')
                 self.generated_code.append(f'l{lop} t1, {variable.offset * 4}(fp)')
                 self.generated_code.append(f's{lop} t0, {attr_offset}(t1)')
 
@@ -79,9 +80,10 @@ class RiscvGenerator(Generator):
                 self.generated_code.append('addi sp, sp, -4')
                 self.generated_code.append(f's{lop} t0, 0(sp)')
             case Location.STACK:
-                self.generated_code.append(f'l{lop} ({variable.offset * 4}(fp)), t0')
+                self.generated_code.append(f'l{lop} t0, {variable.offset * 4}(fp)')
                 self.generated_code.append('addi sp, sp, -4')
-                self.generated_code.append(f's{lop} {attr_offset}(t0), (sp)')
+                self.generated_code.append(f'l{lop} t0, {attr_offset}(t0)')
+                self.generated_code.append(f's{lop} t0, 0(sp)')
 
     def generateLoopStatement(self, while_statement, scope):
         local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
