@@ -154,9 +154,8 @@ class RiscvGenerator(Generator):
         self.generate(while_statement.condition, local_scope)
 
         self.generated_code.append('lw t0, 0(sp)')
-        self.generated_code.append('addi sp, sp, 4')  # reset Stack Pointer from logical calculation in Stack
-
         self.generated_code.append('addi t1, zero, 1')  # for comparing if statement
+        self.generated_code.append('addi sp, sp, 4')  # reset Stack Pointer from logical calculation in Stack
         self.generated_code.append(f'bne t0, t1, {continue_symbol}')
 
         for statement in while_statement.statements:
@@ -223,7 +222,7 @@ class RiscvGenerator(Generator):
 
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append(f'add s{variable.offset}, t0, zero')
+                self.generated_code.append(f'lw s{variable.offset}, 0(sp)')
             case Location.STACK:
                 lop = self.getSpaceForType(type_def)
                 self.generated_code.append(f's{lop} t0, {variable.offset * 4}({relative_register})')
