@@ -147,7 +147,6 @@ class RiscvGenerator(Generator):
         while_symbol = createNewSymbol('while')
         continue_symbol = createNewSymbol('continue')
 
-        local_variable_offset = local_scope.getOffsetForLocalVariable() * 4
 
         self.generated_code.append('')  # formatting
         self.generated_code.append(f'{while_symbol}:')
@@ -161,6 +160,7 @@ class RiscvGenerator(Generator):
         for statement in while_statement.statements:
             self.generate(statement, local_scope)
 
+        local_variable_offset = local_scope.getOffsetForLocalVariable() * 4
         self.generated_code.append(f'addi sp, sp, {local_variable_offset}')  # reset Stack Pointer
         self.generated_code.append(f'j {while_symbol}')
 
