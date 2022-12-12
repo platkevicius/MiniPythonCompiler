@@ -3,7 +3,7 @@ import subprocess
 import unittest
 
 from mi.MiGenerator import MiGenerator
-from shared.allocation.DataAllocator import DataAllocator
+from mi.MiAllocator import MiAllocator
 from tests.mi.TestUtil import createAstForTest
 
 
@@ -17,7 +17,7 @@ class VariableTest(unittest.TestCase):
         program = os.path.join(os.path.dirname(__file__), 'mi-simulator-cli-1.11.jar')
 
         ast = createAstForTest(grammar, script)
-        code = MiGenerator(ast, DataAllocator(None, 0, 0)).generateMachineCode()
+        code = MiGenerator(ast, MiAllocator(None, 0, 0)).generateMachineCode()
 
         file = open(r'' + output, "w")
         for line in code:
