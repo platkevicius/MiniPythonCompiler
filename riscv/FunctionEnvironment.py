@@ -9,13 +9,13 @@ class FunctionEnvironment:
         self.dataInRegister = 11
         self.dataInStack = 0
         self.stack = {}
-        self.paramOffset = 16
+        self.paramOffset = 0
 
     def addParam(self, data):
         if data.name in self.stack:
             raise ValueError('There is already declaration with the name: ' + data.name)
 
-        var = Data(data, self.paramOffset, Location.STACK)
+        var = Data(data, self.paramOffset, Location.REGISTER)
         self.stack[data.name] = var
         self.paramOffset += 1
 

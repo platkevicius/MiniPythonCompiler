@@ -5,7 +5,7 @@ from shared.function.Function import Function
 from shared.struct import StructDefinitions
 from shared.variables import TypeCheck
 from shared.variables.Variable import Variable
-from shared.allocation.DataAllocator import *
+from mi.MiAllocator import *
 from shared.SymbolGenerator import createNewSymbol
 from syntaxTree.function.FunctionCreate import FunctionCreate
 from syntaxTree.struct.StructNode import StructNode
@@ -142,7 +142,7 @@ class MiGenerator(Generator):
                     f'MOVE {lop} {attr_offset}+!R10, -!SP')
 
     def generateLoopStatement(self, while_statement, scope):
-        local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
+        local_scope = MiAllocator(scope, scope.dataInRegister, scope.dataInStack)
         while_symbol = createNewSymbol('while')
         continue_symbol = createNewSymbol('continue')
 
@@ -165,7 +165,7 @@ class MiGenerator(Generator):
         self.generated_code.append(f'ADD W I {local_scope.getOffsetForLocalVariable() * 4}, SP')  # reset Stack Pointer
 
     def generateIfStatement(self, if_statement, scope):
-        local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
+        local_scope = MiAllocator(scope, scope.dataInRegister, scope.dataInStack)
         else_symbol = createNewSymbol('else')
         continue_symbol = createNewSymbol('continue')
 

@@ -4,8 +4,9 @@ from argparse import ArgumentParser
 from lark.indenter import Indenter
 
 from mi.MiGenerator import MiGenerator
+from riscv.RiscvAllocator import RiscvAllocator
 from riscv.RiscvGenerator import RiscvGenerator
-from shared.allocation.DataAllocator import DataAllocator
+from mi.MiAllocator import MiAllocator
 from syntaxTree import Converter
 
 # read grammar from file
@@ -50,9 +51,9 @@ generated_code = []
 gen = None
 
 if architecture == 'mi':
-    gen = MiGenerator(ast, DataAllocator(None, 0, 0))
+    gen = MiGenerator(ast, MiAllocator(None, 0, 0))
 else:
-    gen = RiscvGenerator(ast, DataAllocator(None, 2, 0))
+    gen = RiscvGenerator(ast, RiscvAllocator(None, 0, 0))
 
 generated_code = gen.generateMachineCode()
 

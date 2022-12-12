@@ -3,7 +3,7 @@ import unittest
 
 from mi.MiGenerator import MiGenerator
 from mi.TestUtil import createAstForTest
-from shared.allocation.DataAllocator import DataAllocator
+from mi.MiAllocator import MiAllocator
 
 
 def type_valid_variable_1():
@@ -11,7 +11,7 @@ def type_valid_variable_1():
     script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/valid/variables/variable1.txt')
 
     ast = createAstForTest(grammar, script)
-    gen = MiGenerator(ast, DataAllocator(None, 0, 0))
+    gen = MiGenerator(ast, MiAllocator(None, 0, 0))
 
     gen.generateMachineCode()
 
@@ -21,7 +21,7 @@ def type_valid_variable_2():
     script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/valid/variables/variable2.txt')
 
     ast = createAstForTest(grammar, script)
-    gen = MiGenerator(ast, DataAllocator(None, 0, 0))
+    gen = MiGenerator(ast, MiAllocator(None, 0, 0))
 
     gen.generateMachineCode()
 
@@ -31,7 +31,7 @@ def type_valid_variable_3():
     script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/valid/variables/variable3.txt')
 
     ast = createAstForTest(grammar, script)
-    gen = MiGenerator(ast, DataAllocator(None, 0, 0))
+    gen = MiGenerator(ast, MiAllocator(None, 0, 0))
 
     gen.generateMachineCode()
 
@@ -41,7 +41,7 @@ def type_valid_variable_4():
     script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/valid/variables/variable4.txt')
 
     ast = createAstForTest(grammar, script)
-    gen = MiGenerator(ast, DataAllocator(None, 0, 0))
+    gen = MiGenerator(ast, MiAllocator(None, 0, 0))
 
     gen.generateMachineCode()
 
@@ -51,7 +51,7 @@ def type_valid_variable_5():
     script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/valid/variables/variable5.txt')
 
     ast = createAstForTest(grammar, script)
-    gen = MiGenerator(ast, DataAllocator(None, 0, 0))
+    gen = MiGenerator(ast, MiAllocator(None, 0, 0))
 
     gen.generateMachineCode()
 
@@ -62,7 +62,7 @@ class VariableTypeTest(unittest.TestCase):
         script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/invalid/variables/variable1.txt')
 
         ast = createAstForTest(grammar, script)
-        gen = MiGenerator(ast, DataAllocator(None, 0, 0))
+        gen = MiGenerator(ast, MiAllocator(None, 0, 0))
         self.assertRaises(ValueError, gen.generateMachineCode)
 
     def test_invalid_variable_2(self):
@@ -70,7 +70,7 @@ class VariableTypeTest(unittest.TestCase):
         script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/invalid/variables/variable2.txt')
 
         ast = createAstForTest(grammar, script)
-        gen = MiGenerator(ast, DataAllocator(None, 0, 0))
+        gen = MiGenerator(ast, MiAllocator(None, 0, 0))
         self.assertRaises(ValueError, gen.generateMachineCode)
 
     def test_invalid_variable_3(self):
@@ -78,7 +78,7 @@ class VariableTypeTest(unittest.TestCase):
         script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/invalid/variables/variable3.txt')
 
         ast = createAstForTest(grammar, script)
-        gen = MiGenerator(ast, DataAllocator(None, 0, 0))
+        gen = MiGenerator(ast, MiAllocator(None, 0, 0))
         self.assertRaises(ValueError, gen.generateMachineCode)
 
     def test_invalid_variable_4(self):
@@ -86,7 +86,7 @@ class VariableTypeTest(unittest.TestCase):
         script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/invalid/variables/variable4.txt')
 
         ast = createAstForTest(grammar, script)
-        gen = MiGenerator(ast, DataAllocator(None, 0, 0))
+        gen = MiGenerator(ast, MiAllocator(None, 0, 0))
         self.assertRaises(ValueError, gen.generateMachineCode)
 
     def test_invalid_variable_5(self):
@@ -94,7 +94,7 @@ class VariableTypeTest(unittest.TestCase):
         script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/invalid/variables/variable5.txt')
 
         ast = createAstForTest(grammar, script)
-        gen = MiGenerator(ast, DataAllocator(None, 0, 0))
+        gen = MiGenerator(ast, MiAllocator(None, 0, 0))
         self.assertRaises(ValueError, gen.generateMachineCode)
 
     def test_invalid_variable_6(self):
@@ -102,7 +102,7 @@ class VariableTypeTest(unittest.TestCase):
         script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/invalid/variables/variable6.txt')
 
         ast = createAstForTest(grammar, script)
-        gen = MiGenerator(ast, DataAllocator(None, 0, 0))
+        gen = MiGenerator(ast, MiAllocator(None, 0, 0))
 
         self.assertRaises(ValueError, gen.generateMachineCode)
 

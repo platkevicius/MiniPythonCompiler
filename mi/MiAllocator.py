@@ -2,7 +2,7 @@ from shared.allocation.Data import Data
 from shared.allocation.Location import Location
 
 
-class DataAllocator:
+class MiAllocator:
 
     def __init__(self, parent, data_in_register, data_in_stack):
         self.parent = parent

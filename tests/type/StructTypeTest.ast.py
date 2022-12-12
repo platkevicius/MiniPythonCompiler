@@ -2,7 +2,7 @@ import os
 
 from mi.MiGenerator import MiGenerator
 from mi.TestUtil import createAstForTest
-from shared.allocation.DataAllocator import DataAllocator
+from mi.MiAllocator import MiAllocator
 
 
 def type_valid_struct_1():
@@ -10,7 +10,7 @@ def type_valid_struct_1():
     script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/valid/structs/struct1.txt')
 
     ast = createAstForTest(grammar, script)
-    gen = MiGenerator(ast, DataAllocator(None, 0, 0))
+    gen = MiGenerator(ast, MiAllocator(None, 0, 0))
 
     gen.generateMachineCode()
 
@@ -20,7 +20,7 @@ def type_valid_struct_2():
     script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/valid/structs/struct2.txt')
 
     ast = createAstForTest(grammar, script)
-    gen = MiGenerator(ast, DataAllocator(None, 0, 0))
+    gen = MiGenerator(ast, MiAllocator(None, 0, 0))
 
     gen.generateMachineCode()
 

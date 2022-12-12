@@ -1,8 +1,12 @@
+from riscv.RiscvAllocator import RiscvAllocator
+from riscv.FunctionEnvironment import FunctionEnvironment
 from shared.Generator import Generator
+from shared.allocation.Location import Location
+from shared.function import FunctionDefinitions
+from shared.function.Function import Function
 from shared.struct import StructDefinitions
 from shared.variables import TypeCheck
 from shared.variables.Variable import Variable
-from shared.allocation.DataAllocator import *
 from shared.SymbolGenerator import createNewSymbol
 from syntaxTree.function.FunctionCreate import FunctionCreate
 from syntaxTree.struct.StructNode import StructNode
@@ -32,6 +36,57 @@ class RiscvGenerator(Generator):
             self.generate(goal, self.scope)
         return self.generated_code
 
+    def generateFunctionCreate(self, ast, scope):
+        name = ast.name
+        return_type = ast.return_type
+        params = ast.params_list
+
+        FunctionDefinitions.addDefinition(Function(name, params, return_type))
+
+        param_scope = FunctionEnvironment(scope)
+
+        for param in ast.params_list:
+            param_scope.addParam(param)
+        param_scope.addParam(Variable('return', return_type))
+
+        body_scope = FunctionEnvironment(param_scope)
+        self.generated_code.append(name + ': ')
+        self.pushr()
+        self.generated_code.append('mv s11, sp')
+        for statement in ast.statements:
+            self.generate(statement, body_scope)
+
+    def generateFunctionCall(self, ast, scope):
+        function = FunctionDefinitions.findDefinition(ast.name)
+
+        if len(function.params) != len(ast.params):
+            raise ValueError('param size is not equivalent')
+
+        for i in range(len(function.params)):
+            param_type = FunctionDefinitions.findTypeForParam(function.name, function.params[i].name)
+            TypeCheck.checkTypeForVariable(param_type, ast.params[i], scope)
+
+        for i in range(0, len(function.params)):
+            expr = ast.params[i]
+            self.generate(expr, scope)
+            self.generated_code.append(f'lw a{i}, 0(sp)')
+            self.generated_code.append('addi sp, sp, 4')
+
+        self.generated_code.append(f'jal {function.name}')
+
+    def generateReturnStatement(self, ast, scope):
+        return_data = scope.findData('return')
+        lop = self.getSpaceForType(return_data.data.type_def)
+
+        TypeCheck.checkTypeForVariable(return_data.data.type_def, ast.expression, scope)
+
+        self.generate(ast.expression, scope)
+
+        self.generated_code.append(f'l{lop} a0, 0(sp)')
+        self.generated_code.append('mv sp, s11')  # reset Stack Pointer
+        self.popr()
+        self.generated_code.append('jr ra')
+
     def generateStructCreate(self, struct):
         self.generated_code.append('mv t0, t6')
 
@@ -58,7 +113,7 @@ class RiscvGenerator(Generator):
         match variable.location:
             case Location.REGISTER:
                 self.generated_code.append(f'l{lop} t0, 0(sp)')
-                self.generated_code.append(f's{lop} t0, {attr_offset}(s{variable.offset - 1})')
+                self.generated_code.append(f's{lop} t0, {attr_offset}(s{variable.offset})')
             case Location.STACK:
                 self.generated_code.append(f'l{lop} t0, 0(sp)')
                 self.generated_code.append('addi sp, sp, 4')
@@ -76,7 +131,7 @@ class RiscvGenerator(Generator):
 
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append(f'l{lop} t0, {attr_offset}(s{variable.offset - 1})')
+                self.generated_code.append(f'l{lop} t0, {attr_offset}(s{variable.offset})')
                 self.generated_code.append('addi sp, sp, -4')
                 self.generated_code.append(f's{lop} t0, 0(sp)')
             case Location.STACK:
@@ -86,7 +141,7 @@ class RiscvGenerator(Generator):
                 self.generated_code.append(f's{lop} t0, 0(sp)')
 
     def generateLoopStatement(self, while_statement, scope):
-        local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
+        local_scope = RiscvAllocator(scope, scope.dataInRegister, scope.dataInStack)
         while_symbol = createNewSymbol('while')
         continue_symbol = createNewSymbol('continue')
 
@@ -112,7 +167,7 @@ class RiscvGenerator(Generator):
         self.generated_code.append(f'addi sp, sp, {local_variable_offset}')  # reset Stack Pointer
 
     def generateIfStatement(self, if_statement, scope):
-        local_scope = DataAllocator(scope, scope.dataInRegister, scope.dataInStack)
+        local_scope = RiscvAllocator(scope, scope.dataInRegister, scope.dataInStack)
         else_symbol = createNewSymbol('else')
         continue_symbol = createNewSymbol('continue')
 
@@ -150,10 +205,8 @@ class RiscvGenerator(Generator):
 
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append(f'add s{variable.offset - 1}, t0, zero')
+                self.generated_code.append(f'add s{variable.offset}, t0, zero')
                 self.generated_code.append('addi sp, sp, 4')  # reset stack pointer
-            case Location.STACK:
-                self.generated_code.append('sw t0, 0(sp)')
 
     def generateVariableAssignment(self, variable_assignment, scope):
         name = variable_assignment.name
@@ -165,7 +218,7 @@ class RiscvGenerator(Generator):
 
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append(f'add s{variable.offset - 1}, t0, zero')
+                self.generated_code.append(f'add s{variable.offset}, t0, zero')
                 self.generated_code.append('addi sp, sp, 4')  # reset stack pointer
             case Location.STACK:
                 lop = self.getSpaceForType(type_def)
@@ -176,11 +229,12 @@ class RiscvGenerator(Generator):
         type_def = variable.data.type_def
 
         lop = self.getSpaceForType(type_def)
+        relative_register = self.getRelativeRegister(scope)
 
         self.generated_code.append('addi sp, sp, -4')
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append(f's{lop} s{variable.offset - 1}, 0(sp)')
+                self.generated_code.append(f's{lop} {relative_register}{variable.offset}, 0(sp)')
                 self.generated_code.append(f'l{lop} t0, 0(sp)')
             case Location.STACK:
                 self.generated_code.append(f'l{lop} t0, {variable.offset * 4}(fp)')
@@ -299,3 +353,20 @@ mv t6, gp
                 return 'w'
             case _:
                 return 'w'
+
+    def popr(self):
+        for i in range(0, 11):
+            self.generated_code.append(f'lw s{i}, 0(sp)')
+            self.generated_code.append('addi sp, sp, 4')
+
+    def pushr(self):
+        for i in range(10, -1, -1):
+            self.generated_code.append(f'sw s{i}, 0(sp)')
+            self.generated_code.append('addi sp, sp, -4')
+
+    def getRelativeRegister(self, scope):
+        match scope.isInFunction():
+            case False:
+                return 's'
+            case True:
+                return 'a'
