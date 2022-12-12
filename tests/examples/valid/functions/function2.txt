@@ -1,4 +1,5 @@
 def sum(a: int, b: int, c: int) -> int:
-    return a + b + c
+    var res: int = a + b + c
+    return res
 
 var sum: int = sum(10, 5, 100)

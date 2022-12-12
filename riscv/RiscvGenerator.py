@@ -73,6 +73,7 @@ class RiscvGenerator(Generator):
             self.generated_code.append('addi sp, sp, 4')
 
         self.generated_code.append(f'jal {function.name}')
+        self.generated_code.append('sw a0, 0(sp)')
 
     def generateReturnStatement(self, ast, scope):
         return_data = scope.findData('return')
@@ -83,6 +84,7 @@ class RiscvGenerator(Generator):
         self.generate(ast.expression, scope)
 
         self.generated_code.append(f'l{lop} a0, 0(sp)')
+        self.generated_code.append('addi sp, sp, 4')
         self.generated_code.append('mv sp, s11')  # reset Stack Pointer
         self.popr()
         self.generated_code.append('jr ra')
@@ -152,8 +154,9 @@ class RiscvGenerator(Generator):
         self.generate(while_statement.condition, local_scope)
 
         self.generated_code.append('lw t0, 0(sp)')
-        self.generated_code.append('addi t1, zero, 1')  # for comparing if statement
         self.generated_code.append('addi sp, sp, 4')  # reset Stack Pointer from logical calculation in Stack
+
+        self.generated_code.append('addi t1, zero, 1')  # for comparing if statement
         self.generated_code.append(f'bne t0, t1, {continue_symbol}')
 
         for statement in while_statement.statements:
@@ -176,8 +179,9 @@ class RiscvGenerator(Generator):
 
         self.generate(if_statement.condition, scope)
         self.generated_code.append('lw t0, 0(sp)')
-        self.generated_code.append('addi t1, zero, 1')  # for comparing if statement
         self.generated_code.append('addi sp, sp, 4')  # reset Stack Pointer from logical calculation in Stack
+
+        self.generated_code.append('addi t1, zero, 1')  # for comparing if statement
         self.generated_code.append('bne t0, t1, ' + (else_symbol if has_else else continue_symbol))
 
         self.generated_code.append('')  # formatting
@@ -205,7 +209,7 @@ class RiscvGenerator(Generator):
 
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append(f'add s{variable.offset}, t0, zero')
+                self.generated_code.append(f'lw s{variable.offset}, 0(sp)')
                 self.generated_code.append('addi sp, sp, 4')  # reset stack pointer
 
     def generateVariableAssignment(self, variable_assignment, scope):
@@ -215,31 +219,32 @@ class RiscvGenerator(Generator):
         type_def = variable.data.type_def
 
         TypeCheck.checkTypeForVariable(type_def, variable_assignment.value, scope)
+        relative_register = self.getRelativeRegister(scope, Location.STACK)
 
         match variable.location:
             case Location.REGISTER:
                 self.generated_code.append(f'add s{variable.offset}, t0, zero')
-                self.generated_code.append('addi sp, sp, 4')  # reset stack pointer
             case Location.STACK:
                 lop = self.getSpaceForType(type_def)
-                self.generated_code.append(f's{lop} t0, {variable.offset * 4}(fp)')
+                self.generated_code.append(f's{lop} t0, {variable.offset * 4}({relative_register})')
+
+        self.generated_code.append('addi sp, sp, 4')
 
     def generateResolveVariable(self, variable, scope):
         variable = scope.findData(variable.name)
         type_def = variable.data.type_def
 
         lop = self.getSpaceForType(type_def)
-        relative_register = self.getRelativeRegister(scope)
 
         self.generated_code.append('addi sp, sp, -4')
         match variable.location:
             case Location.REGISTER:
+                relative_register = self.getRelativeRegister(scope, Location.REGISTER)
                 self.generated_code.append(f's{lop} {relative_register}{variable.offset}, 0(sp)')
-                self.generated_code.append(f'l{lop} t0, 0(sp)')
             case Location.STACK:
-                self.generated_code.append(f'l{lop} t0, {variable.offset * 4}(fp)')
+                relative_register = self.getRelativeRegister(scope, Location.STACK)
+                self.generated_code.append(f'l{lop} t0, {variable.offset * 4}({relative_register})')
                 self.generated_code.append(f's{lop} t0, 0(sp)')
-                self.generated_code.append(f'l{lop} t0, 0(sp)')
 
     def generateBinaryOp(self, binary_op, scope):
         self.generate(binary_op.left, scope)
@@ -270,16 +275,14 @@ class RiscvGenerator(Generator):
                 self.generated_code.append('lw t1, 0(sp)')
 
                 self.generated_code.append('or t0, t0, t1')
-                self.generated_code.append('addi sp, sp, 8')
-                self.generated_code.append('addi sp, sp, -4')
+                self.generated_code.append('addi sp, sp, 4')
                 self.generated_code.append('sw t0, 0(sp)')
             case 'and':
                 self.generated_code.append('lw t0, 4(sp)')
                 self.generated_code.append('lw t1, 0(sp)')
 
                 self.generated_code.append('and t0, t0, t1')
-                self.generated_code.append('addi sp, sp, 8')
-                self.generated_code.append('addi sp, sp, -4')
+                self.generated_code.append('addi sp, sp, 4')
                 self.generated_code.append('sw t0, 0(sp)')
 
     def generateArithmetic(self, op):
@@ -292,8 +295,7 @@ class RiscvGenerator(Generator):
         self.generated_code.append('lw t1, 0(sp)')
 
         self.generated_code.append(f'{mappings.get(op)} t0, t0, t1')
-        self.generated_code.append('addi sp, sp, 8')
-        self.generated_code.append('addi sp, sp, -4')
+        self.generated_code.append('addi sp, sp, 4')
         self.generated_code.append('sw t0, 0(sp)')
 
     def generateComparison(self, op):
@@ -307,8 +309,7 @@ class RiscvGenerator(Generator):
 
         self.generated_code.append('lw t0, 4(sp)')
         self.generated_code.append('lw t1, 0(sp)')
-        self.generated_code.append('addi sp, sp, 8')
-        self.generated_code.append('addi sp, sp, -4')
+        self.generated_code.append('addi sp, sp, 4')
         self.generated_code.append(f'{mappings.get(op)} t0, t1, {symbol}')
         self.generated_code.append('add t0, zero, zero')
         self.generated_code.append('sb t0, 0(sp)')
@@ -361,12 +362,20 @@ mv t6, gp
 
     def pushr(self):
         for i in range(10, -1, -1):
-            self.generated_code.append(f'sw s{i}, 0(sp)')
             self.generated_code.append('addi sp, sp, -4')
+            self.generated_code.append(f'sw s{i}, 0(sp)')
 
-    def getRelativeRegister(self, scope):
-        match scope.isInFunction():
-            case False:
-                return 's'
-            case True:
-                return 'a'
+    def getRelativeRegister(self, scope, location):
+        if location is Location.REGISTER:
+            match scope.isInFunction():
+                case False:
+                    return 's'
+                case True:
+                    return 'a'
+
+        if location is Location.STACK:
+            match scope.isInFunction():
+                case False:
+                    return 'fp'
+                case True:
+                    return 's11'
