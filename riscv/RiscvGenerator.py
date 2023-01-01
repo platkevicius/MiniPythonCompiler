@@ -73,6 +73,7 @@ class RiscvGenerator(Generator):
             self.generated_code.append('addi sp, sp, 4')
 
         self.generated_code.append(f'jal {function.name}')
+        self.generated_code.append('addi sp, sp, -4')
         self.generated_code.append('sw a0, 0(sp)')
 
     def generateReturnStatement(self, ast, scope):
