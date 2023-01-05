@@ -9,7 +9,11 @@ class FunctionEnvironment:
         self.dataInRegister = 11
         self.dataInStack = 0
         self.stack = {}
-        self.paramOffset = 0
+
+        if type(parent) is FunctionEnvironment:
+            self.paramOffset = parent.paramOffset
+        else:
+            self.paramOffset = 0
 
     def addParam(self, data):
         if data.name in self.stack:
@@ -54,3 +58,6 @@ class FunctionEnvironment:
 
     def isInFunction(self):
         return True
+
+    def getParams(self):
+        return self.paramOffset

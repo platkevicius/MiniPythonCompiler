@@ -52,3 +52,10 @@ class RiscvAllocator:
             return False
         else:
             return self.parent.isInFunction()
+
+    def getParams(self):
+        if self.parent is None:
+            return -1
+        else:
+            return self.parent.getParams()
+

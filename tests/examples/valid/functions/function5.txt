@@ -1,0 +1,10 @@
+def mult(a: int, b: int) -> int:
+    return a * b
+
+def fact(num: int) -> int:
+    if num == 0:
+        return 1
+
+    return mult(fact(num-1), num)
+
+var result: int = fact(5)

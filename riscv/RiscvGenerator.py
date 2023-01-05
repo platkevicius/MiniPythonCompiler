@@ -49,10 +49,10 @@ class RiscvGenerator(Generator):
             param_scope.addParam(param)
         param_scope.addParam(Variable('return', return_type))
 
-        body_scope = FunctionEnvironment(param_scope)
+        body_scope = RiscvAllocator(param_scope, param_scope.dataInRegister, 0)
         self.generated_code.append(name + ': ')
         self.pushr()
-        self.generated_code.append('mv s11, sp')
+        self.generated_code.append('mv s11, sp')  # todo: this is the last problem for riscv functions!!!
         for statement in ast.statements:
             self.generate(statement, body_scope)
 
@@ -66,6 +66,22 @@ class RiscvGenerator(Generator):
             param_type = FunctionDefinitions.findTypeForParam(function.name, function.params[i].name)
             TypeCheck.checkTypeForVariable(param_type, ast.params[i], scope)
 
+        if scope.isInFunction():
+            # save frame pointer
+            self.generated_code.append('addi sp, sp, -4')
+            self.generated_code.append('sw s11, 0(sp)')
+
+            # save return address
+            self.generated_code.append('addi sp, sp, -4')
+            self.generated_code.append('sw ra, 0(sp)')
+
+            # save arguments
+            param_offset = scope.getParams()
+            for i in reversed(range(0, param_offset - 1)):
+                self.generated_code.append('addi sp, sp, -4')
+                self.generated_code.append(f'sw a{i}, 0(sp)')
+
+        # remove parameter from stack
         for i in range(0, len(function.params)):
             expr = ast.params[i]
             self.generate(expr, scope)
@@ -73,8 +89,25 @@ class RiscvGenerator(Generator):
             self.generated_code.append('addi sp, sp, 4')
 
         self.generated_code.append(f'jal {function.name}')
-        self.generated_code.append('addi sp, sp, -4')
-        self.generated_code.append('sw a0, 0(sp)')
+        self.generated_code.append('mv a0, t0')
+
+        if scope.isInFunction():
+            # retrieve arguments
+            param_offset = scope.getParams()
+            for i in range(0, param_offset - 1):
+                self.generated_code.append(f'lw a{i}, 0(sp)')
+                self.generated_code.append('addi sp, sp, 4')
+
+            # retrieve return address
+            self.generated_code.append('lw ra, 0(sp)')
+            self.generated_code.append('addi sp, sp, 4')
+
+            # retrieve frame pointer
+            self.generated_code.append('lw s11, 0(sp)')
+            self.generated_code.append('addi, sp, sp, 4')
+
+        self.generated_code.append('addi, sp, sp, -4')
+        self.generated_code.append('sw t0, 0(sp)')
 
     def generateReturnStatement(self, ast, scope):
         return_data = scope.findData('return')
@@ -147,7 +180,6 @@ class RiscvGenerator(Generator):
         local_scope = RiscvAllocator(scope, scope.dataInRegister, scope.dataInStack)
         while_symbol = createNewSymbol('while')
         continue_symbol = createNewSymbol('continue')
-
 
         self.generated_code.append('')  # formatting
         self.generated_code.append(f'{while_symbol}:')
