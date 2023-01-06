@@ -5,7 +5,6 @@ from shared.allocation.Location import Location
 from shared.function import FunctionDefinitions
 from shared.function.Function import Function
 from shared.struct import StructDefinitions
-from shared.variables import TypeCheck
 from shared.variables.Variable import Variable
 from shared.SymbolGenerator import createNewSymbol
 from syntaxTree.function.FunctionCreate import FunctionCreate
@@ -62,10 +61,6 @@ class RiscvGenerator(Generator):
         if len(function.params) != len(ast.params):
             raise ValueError('param size is not equivalent')
 
-        for i in range(len(function.params)):
-            param_type = FunctionDefinitions.findTypeForParam(function.name, function.params[i].name)
-            TypeCheck.checkTypeForVariable(param_type, ast.params[i], scope)
-
         if scope.isInFunction():
             # save frame pointer
             self.generated_code.append('addi sp, sp, -4')
@@ -113,8 +108,6 @@ class RiscvGenerator(Generator):
         return_data = scope.findData('return')
         lop = self.getSpaceForType(return_data.data.type_def)
 
-        TypeCheck.checkTypeForVariable(return_data.data.type_def, ast.expression, scope)
-
         self.generate(ast.expression, scope)
 
         self.generated_code.append(f'l{lop} a0, 0(sp)')
@@ -140,7 +133,6 @@ class RiscvGenerator(Generator):
         struct_attribute = struct.attribute
         type_def = StructDefinitions.findTypeForAttribute(struct_name, struct_attribute)
 
-        TypeCheck.checkTypeForVariable(type_def, struct.value, scope)
         self.generate(struct.value, scope)
 
         lop = self.getSpaceForType(type_def)
@@ -234,8 +226,6 @@ class RiscvGenerator(Generator):
         name = variable_creation.name
         type_def = variable_creation.type_def
 
-        TypeCheck.checkTypeForVariable(type_def, variable_creation.value, scope)
-
         self.generate(variable_creation.value, scope)
         variable = scope.addData(Variable(name, type_def))
 
@@ -250,7 +240,6 @@ class RiscvGenerator(Generator):
         variable = scope.findData(name)
         type_def = variable.data.type_def
 
-        TypeCheck.checkTypeForVariable(type_def, variable_assignment.value, scope)
         relative_register = self.getRelativeRegister(scope, Location.STACK)
 
         match variable.location:

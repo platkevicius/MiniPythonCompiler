@@ -1,9 +1,8 @@
 import os
 import unittest
 
-from mi.MiGenerator import MiGenerator
 from mi.TestUtil import createAstForTest
-from mi.MiAllocator import MiAllocator
+from shared import TypeCheck
 
 
 def type_valid_variable_1():
@@ -11,9 +10,7 @@ def type_valid_variable_1():
     script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/valid/variables/variable1.txt')
 
     ast = createAstForTest(grammar, script)
-    gen = MiGenerator(ast, MiAllocator(None, 0, 0))
-
-    gen.generateMachineCode()
+    TypeCheck.typePass(ast)
 
 
 def type_valid_variable_2():
@@ -21,9 +18,7 @@ def type_valid_variable_2():
     script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/valid/variables/variable2.txt')
 
     ast = createAstForTest(grammar, script)
-    gen = MiGenerator(ast, MiAllocator(None, 0, 0))
-
-    gen.generateMachineCode()
+    TypeCheck.typePass(ast)
 
 
 def type_valid_variable_3():
@@ -31,9 +26,7 @@ def type_valid_variable_3():
     script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/valid/variables/variable3.txt')
 
     ast = createAstForTest(grammar, script)
-    gen = MiGenerator(ast, MiAllocator(None, 0, 0))
-
-    gen.generateMachineCode()
+    TypeCheck.typePass(ast)
 
 
 def type_valid_variable_4():
@@ -41,9 +34,7 @@ def type_valid_variable_4():
     script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/valid/variables/variable4.txt')
 
     ast = createAstForTest(grammar, script)
-    gen = MiGenerator(ast, MiAllocator(None, 0, 0))
-
-    gen.generateMachineCode()
+    TypeCheck.typePass(ast)
 
 
 def type_valid_variable_5():
@@ -51,9 +42,7 @@ def type_valid_variable_5():
     script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/valid/variables/variable5.txt')
 
     ast = createAstForTest(grammar, script)
-    gen = MiGenerator(ast, MiAllocator(None, 0, 0))
-
-    gen.generateMachineCode()
+    TypeCheck.typePass(ast)
 
 
 class VariableTypeTest(unittest.TestCase):
@@ -62,49 +51,42 @@ class VariableTypeTest(unittest.TestCase):
         script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/invalid/variables/variable1.txt')
 
         ast = createAstForTest(grammar, script)
-        gen = MiGenerator(ast, MiAllocator(None, 0, 0))
-        self.assertRaises(ValueError, gen.generateMachineCode)
+        self.assertRaises(ValueError, lambda: TypeCheck.typePass(ast))
 
     def test_invalid_variable_2(self):
         grammar = os.path.join(os.path.dirname(__file__), os.pardir, '../shared/grammars/miniPythonGrammar.txt')
         script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/invalid/variables/variable2.txt')
 
         ast = createAstForTest(grammar, script)
-        gen = MiGenerator(ast, MiAllocator(None, 0, 0))
-        self.assertRaises(ValueError, gen.generateMachineCode)
+        self.assertRaises(ValueError, lambda: TypeCheck.typePass(ast))
 
     def test_invalid_variable_3(self):
         grammar = os.path.join(os.path.dirname(__file__), os.pardir, '../shared/grammars/miniPythonGrammar.txt')
         script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/invalid/variables/variable3.txt')
 
         ast = createAstForTest(grammar, script)
-        gen = MiGenerator(ast, MiAllocator(None, 0, 0))
-        self.assertRaises(ValueError, gen.generateMachineCode)
+        self.assertRaises(ValueError, lambda: TypeCheck.typePass(ast))
 
     def test_invalid_variable_4(self):
         grammar = os.path.join(os.path.dirname(__file__), os.pardir, '../shared/grammars/miniPythonGrammar.txt')
         script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/invalid/variables/variable4.txt')
 
         ast = createAstForTest(grammar, script)
-        gen = MiGenerator(ast, MiAllocator(None, 0, 0))
-        self.assertRaises(ValueError, gen.generateMachineCode)
+        self.assertRaises(ValueError, lambda: TypeCheck.typePass(ast))
 
     def test_invalid_variable_5(self):
         grammar = os.path.join(os.path.dirname(__file__), os.pardir, '../shared/grammars/miniPythonGrammar.txt')
         script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/invalid/variables/variable5.txt')
 
         ast = createAstForTest(grammar, script)
-        gen = MiGenerator(ast, MiAllocator(None, 0, 0))
-        self.assertRaises(ValueError, gen.generateMachineCode)
+        self.assertRaises(ValueError, lambda: TypeCheck.typePass(ast))
 
     def test_invalid_variable_6(self):
         grammar = os.path.join(os.path.dirname(__file__), os.pardir, '../shared/grammars/miniPythonGrammar.txt')
         script = os.path.join(os.path.dirname(__file__), os.pardir, 'examples/invalid/variables/variable6.txt')
 
         ast = createAstForTest(grammar, script)
-        gen = MiGenerator(ast, MiAllocator(None, 0, 0))
-
-        self.assertRaises(ValueError, gen.generateMachineCode)
+        self.assertRaises(ValueError, lambda: TypeCheck.typePass(ast))
 
 
 if __name__ == '__main__':

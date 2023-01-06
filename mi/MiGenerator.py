@@ -3,7 +3,6 @@ from shared.Generator import Generator
 from shared.function import FunctionDefinitions
 from shared.function.Function import Function
 from shared.struct import StructDefinitions
-from shared.variables import TypeCheck
 from shared.variables.Variable import Variable
 from mi.MiAllocator import *
 from shared.SymbolGenerator import createNewSymbol
@@ -62,10 +61,6 @@ class MiGenerator(Generator):
         if len(function.params) != len(ast.params):
             raise ValueError('param size is not equivalent')
 
-        for i in range(len(function.params)):
-            param_type = FunctionDefinitions.findTypeForParam(function.name, function.params[i].name)
-            TypeCheck.checkTypeForVariable(param_type, ast.params[i], scope)
-
         # free space for type
         if function.return_type is not None:
             self.generated_code.append('CLEAR W -!SP')  # todo: type needs to be added
@@ -81,8 +76,6 @@ class MiGenerator(Generator):
         return_data = scope.findData('return')
         lop = self.getSpaceForType(return_data.data.type_def)
         offset = str(return_data.offset * 4)
-
-        TypeCheck.checkTypeForVariable(return_data.data.type_def, ast.expression, scope)
 
         self.generate(ast.expression, scope)
 
@@ -107,7 +100,6 @@ class MiGenerator(Generator):
         struct_attribute = struct.attribute
         type_def = StructDefinitions.findTypeForAttribute(struct_name, struct_attribute)
 
-        TypeCheck.checkTypeForVariable(type_def, struct.value, scope)
         self.generate(struct.value, scope)
 
         lop = self.getSpaceForType(type_def)
@@ -195,8 +187,6 @@ class MiGenerator(Generator):
         self.generate(variable_creation.value, scope)
         variable = scope.addData(Variable(name, type_def))
 
-        TypeCheck.checkTypeForVariable(type_def, variable_creation.value, scope)
-
         match variable.location:
             case Location.REGISTER:
                 self.generated_code.append(f'MOVE {self.getSpaceForType(type_def)} !SP, R{variable.offset}')
@@ -208,8 +198,6 @@ class MiGenerator(Generator):
         variable = scope.findData(name)
         type_def = variable.data.type_def
         lop = self.getSpaceForType(type_def)
-
-        TypeCheck.checkTypeForVariable(variable.data.type_def, variable_assignment.value, scope)
 
         relative_register = self.getRelativeRegister(scope)
 

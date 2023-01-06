@@ -7,6 +7,7 @@ from mi.MiGenerator import MiGenerator
 from riscv.RiscvAllocator import RiscvAllocator
 from riscv.RiscvGenerator import RiscvGenerator
 from mi.MiAllocator import MiAllocator
+from shared import TypeCheck
 from syntaxTree import Converter
 
 # read grammar from file
@@ -45,6 +46,9 @@ script_file.close()
 
 # generate syntaxTree from parse tree
 ast = Converter.parse_tree_to_ast(parse_tree)
+
+# type check pass
+TypeCheck.typePass(ast)
 
 # code generation for target architecture (MI / RISC-V)
 generated_code = []
