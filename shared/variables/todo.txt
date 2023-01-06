@@ -1,7 +1,3 @@
-1.)
-- implement correct type check
-- refactor code generator (move typecheck to TypeCheck.py to reduce redundancy), extra pass typecheck
-
 2.)
 - implement floats
 - implement automatic type convertion
