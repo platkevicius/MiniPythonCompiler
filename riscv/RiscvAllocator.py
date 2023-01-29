@@ -59,3 +59,10 @@ class RiscvAllocator:
         else:
             return self.parent.getParams()
 
+    def findUsedRegisters(self):
+        if self.parent is None:
+            return -1
+
+        return self.parent.findUsedRegisters()
+
+

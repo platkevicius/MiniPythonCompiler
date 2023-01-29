@@ -61,3 +61,6 @@ class FunctionEnvironment:
 
     def getParams(self):
         return self.paramOffset
+
+    def findUsedRegisters(self):
+        return self.parent.dataInRegister

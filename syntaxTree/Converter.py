@@ -28,7 +28,10 @@ def parse_tree_to_ast(e):
 
         return ast
     if e.data == 'number':
-        return Constant(int(e.children[0].value))
+        if e.children[0].isdigit():
+            return Constant(int(e.children[0].value))
+        else:
+            return Constant(float(e.children[0].value))
     if e.data == 'add':
         e1, e2 = e.children
         return BinaryOp(parse_tree_to_ast(e1), '+', parse_tree_to_ast(e2))

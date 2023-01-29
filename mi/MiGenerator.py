@@ -1,4 +1,5 @@
 from mi.FunctionEnvironment import FunctionEnvironment
+from shared.type import TypeCheck
 from shared.Generator import Generator
 from shared.function import FunctionDefinitions
 from shared.function.Function import Function
@@ -63,7 +64,8 @@ class MiGenerator(Generator):
 
         # free space for type
         if function.return_type is not None:
-            self.generated_code.append('CLEAR W -!SP')  # todo: type needs to be added
+            lop = self.getSpaceForType(function.return_type)
+            self.generated_code.append(f'CLEAR {lop} -!SP')  # todo: type needs to be added
 
         for i in range(len(function.params) - 1, -1, -1):
             expr = ast.params[i]
@@ -225,39 +227,41 @@ class MiGenerator(Generator):
     def generateBinaryOp(self, binary_op, scope):
         self.generate(binary_op.left, scope)
         self.generate(binary_op.right, scope)
+        type_def = TypeCheck.checkType(binary_op, scope)
 
         op = binary_op.op
+        lop = self.getSpaceForType(type_def)
         match op:
             case '+':
-                self.generated_code.append('ADD W !SP, 4+!SP')
-                self.generated_code.append('ADD W I 4, SP')
+                self.generated_code.append(f'ADD {lop} !SP, 4+!SP')
+                self.generated_code.append(f'ADD W I 4, SP')
             case '-':
-                self.generated_code.append('SUB W !SP, 4+!SP')
-                self.generated_code.append('ADD W I 4, SP')
+                self.generated_code.append(f'SUB {lop} !SP, 4+!SP')
+                self.generated_code.append(f'ADD W I 4, SP')
             case '*':
-                self.generated_code.append('MULT W !SP, 4+!SP')
-                self.generated_code.append('ADD W I 4, SP')
+                self.generated_code.append(f'MULT {lop} !SP, 4+!SP')
+                self.generated_code.append(f'ADD W I 4, SP')
             case '/':
-                self.generated_code.append('DIV W !SP, 4+!SP')
-                self.generated_code.append('ADD W I 4, SP')
+                self.generated_code.append(f'DIV {lop} !SP, 4+!SP')
+                self.generated_code.append(f'ADD W I 4, SP')
             case '>':
-                self.generateComparison('>')
+                self.generateComparison('>', lop)
             case '>=':
-                self.generateComparison('>=')
+                self.generateComparison('>=', lop)
             case '==':
-                self.generateComparison('==')
+                self.generateComparison('==', lop)
             case '<=':
-                self.generateComparison('<=')
+                self.generateComparison('<=', lop)
             case '<':
-                self.generateComparison('<')
+                self.generateComparison('<', lop)
             case 'or':
-                self.generated_code.append('OR W !SP, 4+!SP')
-                self.generated_code.append('ADD W I 4, SP')
+                self.generated_code.append(f'OR W !SP, 4+!SP')
+                self.generated_code.append(f'ADD W I 4, SP')
             case 'and':
-                self.generated_code.append('MULT W !SP, 4+!SP')
-                self.generated_code.append('ADD W I 4, SP')
+                self.generated_code.append(f'MULT W !SP, 4+!SP')
+                self.generated_code.append(f'ADD W I 4, SP')
 
-    def generateComparison(self, op):
+    def generateComparison(self, op, lop):
         mappings = {">": "JGT",
                     ">=": "JGE",
                     "==": "JEQ",
@@ -266,15 +270,15 @@ class MiGenerator(Generator):
         symbol = createNewSymbol('logicalTrue')
         symbol_continue = createNewSymbol('continue')
 
-        self.generated_code.append('SUB W !SP, 4+!SP')
-        self.generated_code.append('ADD W I 4, SP')
-        self.generated_code.append('CMP W !SP, I 0')
+        self.generated_code.append(f'SUB {lop} !SP, 4+!SP')
+        self.generated_code.append(f'ADD W I 4, SP')
+        self.generated_code.append(f'CMP {lop} !SP, I 0')
         self.generated_code.append(f'{mappings.get(op)} {symbol}')
-        self.generated_code.append('MOVE W I 0, !SP')
+        self.generated_code.append(f'MOVE W I 0, !SP')
         self.generated_code.append(f'JUMP {symbol_continue}')
         self.generated_code.append('')
         self.generated_code.append(f'{symbol}:')
-        self.generated_code.append('MOVE W I 1, !SP')
+        self.generated_code.append(f'MOVE W I 1, !SP')
         self.generated_code.append('')
         self.generated_code.append(f'{symbol_continue}:')
 
@@ -284,7 +288,10 @@ class MiGenerator(Generator):
         elif constant.value == 'false':
             self.generated_code.append('MOVE W I 0, -!SP')
         else:
-            self.generated_code.append(f'MOVE W I {constant.value}, -!SP')
+            if type(constant.value) == int:
+                self.generated_code.append(f'MOVE W I {constant.value}, -!SP')
+            else:
+                self.generated_code.append(f'MOVE F I {constant.value}, -!SP')
 
     def generateInit(self):
         return '''

@@ -50,7 +50,7 @@ class RiscvGenerator(Generator):
 
         body_scope = RiscvAllocator(param_scope, param_scope.dataInRegister, 0)
         self.generated_code.append(name + ': ')
-        self.pushr()
+        self.pushr(body_scope)
         self.generated_code.append('mv s11, sp')  # todo: this is the last problem for riscv functions!!!
         for statement in ast.statements:
             self.generate(statement, body_scope)
@@ -80,7 +80,9 @@ class RiscvGenerator(Generator):
         for i in range(0, len(function.params)):
             expr = ast.params[i]
             self.generate(expr, scope)
-            self.generated_code.append(f'lw a{i}, 0(sp)')
+
+        for i in range(0, len(function.params)):
+            self.generated_code.append(f'lw a{i}, 0(sp)')  # todo: problem! Parameter is being deleted and num is not anymore in a0
             self.generated_code.append('addi sp, sp, 4')
 
         self.generated_code.append(f'jal {function.name}')
@@ -113,7 +115,7 @@ class RiscvGenerator(Generator):
         self.generated_code.append(f'l{lop} a0, 0(sp)')
         self.generated_code.append('addi sp, sp, 4')
         self.generated_code.append('mv sp, s11')  # reset Stack Pointer
-        self.popr()
+        self.popr(scope)
         self.generated_code.append('jr ra')
 
     def generateStructCreate(self, struct):
@@ -333,12 +335,12 @@ class RiscvGenerator(Generator):
         self.generated_code.append('addi sp, sp, 4')
         self.generated_code.append(f'{mappings.get(op)} t0, t1, {symbol}')
         self.generated_code.append('add t0, zero, zero')
-        self.generated_code.append('sb t0, 0(sp)')
+        self.generated_code.append('sw t0, 0(sp)')
         self.generated_code.append(f'j {symbol_continue}')
         self.generated_code.append('')
         self.generated_code.append(f'{symbol}:')
         self.generated_code.append('addi t0, zero, 1')
-        self.generated_code.append('sb t0, 0(sp)')
+        self.generated_code.append('sw t0, 0(sp)')
         self.generated_code.append('')
         self.generated_code.append(f'{symbol_continue}:')
 
@@ -376,13 +378,17 @@ mv t6, gp
             case _:
                 return 'w'
 
-    def popr(self):
-        for i in range(0, 11):
+    def popr(self, scope):
+        registerCount = scope.findUsedRegisters()
+
+        for i in range(0, registerCount):
             self.generated_code.append(f'lw s{i}, 0(sp)')
             self.generated_code.append('addi sp, sp, 4')
 
-    def pushr(self):
-        for i in range(10, -1, -1):
+    def pushr(self, scope):
+        registerCount = scope.findUsedRegisters()
+
+        for i in range(registerCount, 0, -1):
             self.generated_code.append('addi sp, sp, -4')
             self.generated_code.append(f'sw s{i}, 0(sp)')
 

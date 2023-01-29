@@ -7,7 +7,7 @@ from mi.MiGenerator import MiGenerator
 from riscv.RiscvAllocator import RiscvAllocator
 from riscv.RiscvGenerator import RiscvGenerator
 from mi.MiAllocator import MiAllocator
-from shared import TypeCheck
+from shared.type import TypeCheck
 from syntaxTree import Converter
 
 # read grammar from file

@@ -21,6 +21,7 @@ struct_create: "new" WORD "()"
 
 type: "int"                                                                                 -> int
     | "boolean"                                                                             -> boolean
+    | "float"                                                                               -> float
     | WORD                                                                                  -> struct
 
 else_statement: "else" ":" _NL _INDENT statement+ _DEDENT

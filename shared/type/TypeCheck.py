@@ -92,7 +92,7 @@ def checkFunctionCall(ast, scope):
 def checkReturnStatement(ast, scope):
     return_data = scope.findData('return')
     type_def = return_data.data.type_def
-    expr_type = checkType(ast.value, scope)
+    expr_type = checkType(ast.expression, scope)
 
     if type_def != expr_type:
         raise ValueError('Wrong types')
@@ -186,6 +186,10 @@ def checkBinaryOp(ast, scope):
 
     if var_type1 != var_type2:
         raise ValueError('Wrong types')
+
+    logicals = ['<', '<=', '==', '>=', '>']
+    if ast.op in logicals:
+        return 'boolean'
 
     return var_type1
 

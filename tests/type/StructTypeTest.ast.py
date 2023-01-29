@@ -1,9 +1,7 @@
 import os
 
-from mi.MiGenerator import MiGenerator
 from mi.TestUtil import createAstForTest
-from mi.MiAllocator import MiAllocator
-from shared import TypeCheck
+from shared.type import TypeCheck
 
 
 def type_valid_struct_1():

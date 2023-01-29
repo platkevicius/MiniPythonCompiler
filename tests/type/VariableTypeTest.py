@@ -2,7 +2,7 @@ import os
 import unittest
 
 from mi.TestUtil import createAstForTest
-from shared import TypeCheck
+from shared.type import TypeCheck
 
 
 def type_valid_variable_1():
