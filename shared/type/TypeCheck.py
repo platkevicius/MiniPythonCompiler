@@ -21,8 +21,9 @@ from syntaxTree.struct.StructResolve import StructResolve
 
 
 def typePass(goals):
+    scope = MiAllocator(None, 0, 0)
     for goal in goals:
-        checkType(goal, MiAllocator(None, 0, 0))
+        checkType(goal, scope)
 
 
 def checkType(ast, scope):
@@ -82,7 +83,7 @@ def checkFunctionCall(ast, scope):
         param_type = FunctionDefinitions.findTypeForParam(function.name, function.params[i].name)
         expr_type = checkType(ast.params[i], scope)
 
-        if param_type is not expr_type:
+        if param_type != expr_type:
             raise ValueError('Wrong types')
 
     return function.return_type
@@ -93,7 +94,7 @@ def checkReturnStatement(ast, scope):
     type_def = return_data.data.type_def
     expr_type = checkType(ast.value, scope)
 
-    if type_def is not expr_type:
+    if type_def != expr_type:
         raise ValueError('Wrong types')
 
 
@@ -112,7 +113,7 @@ def checkStructAssignment(ast, scope):
     type_def = StructDefinitions.findTypeForAttribute(struct_name, struct_attribute)
     expr_type = checkType(ast.value, scope)
 
-    if type_def is not expr_type:
+    if type_def != expr_type:
         raise ValueError('Wrong types')
 
 
@@ -125,7 +126,7 @@ def checkLoopStatement(ast, scope):
     local_scope = MiAllocator(scope, scope.dataInRegister, scope.dataInStack)
     expr_type = checkType(ast.condition, scope)
 
-    if expr_type is not 'boolean':
+    if expr_type != 'boolean':
         raise ValueError('Wrong types')
 
     for statement in ast.statements:
@@ -137,7 +138,7 @@ def checkIfStatement(ast, scope):
     expr_type = checkType(ast.condition, scope)
     has_else = len(ast.else_statements) != 0
 
-    if expr_type is not 'boolean':
+    if expr_type != 'boolean':
         raise ValueError('Wrong types')
 
     for statement in ast.statements:
@@ -152,9 +153,9 @@ def checkVariableCreation(ast, scope):
     name = ast.name
     type_def = ast.type_def
     scope.addData(Variable(name, type_def))
-    expr_type = checkType(ast.value, scope)
+    expr_type = getVariableValueType(ast.value, scope)
 
-    if type_def is not expr_type:
+    if type_def != expr_type:
         raise ValueError('Wrong types')
 
 
@@ -162,15 +163,26 @@ def checkVariableAssignment(ast, scope):
     name = ast.name
     variable = scope.findData(name)
     type_def = variable.data.type_def
-    expr_type = checkType(ast.value, scope)
+    expr_type = getVariableValueType(ast.value, scope)
 
-    if type_def is not expr_type:
+    if type_def != expr_type:
         raise ValueError('Wrong types')
 
 
 def checkBinaryOp(ast, scope):
     var_type1 = checkType(ast.left, scope)
     var_type2 = checkType(ast.right, scope)
+
+    if var_type1 == 'float' and var_type2 == 'int':
+        var_type2 = 'float'
+        if type(ast.right) == Constant:
+            ast.right.type_def = 'float'
+
+    if var_type1 == 'int' and var_type2 == 'float':
+        var_type1 = 'float'
+
+        if type(ast.left) == Constant:
+            ast.right.type_def = 'float'
 
     if var_type1 != var_type2:
         raise ValueError('Wrong types')
@@ -183,8 +195,26 @@ def checkConstant(ast):
         return 'boolean'
     if type(ast.value) == int:
         return 'int'
+    if type(ast.value) == float:
+        return 'float'
 
 
 def checkResolveVariable(ast, scope):
     variable = scope.findData(ast.name)
     return variable.data.type_def
+
+
+def getVariableValueType(assigment_expr, scope):
+    logicals = ['or', 'and', '<', '<=', '==', '>=', '>']
+    arithmetics = ['+', '-', '*', '/']
+
+    match assigment_expr:
+        case BinaryOp():
+            type_def = checkType(assigment_expr, scope)
+            if assigment_expr.op in logicals:
+                return 'boolean'
+            elif assigment_expr.op in arithmetics:
+                return type_def
+        case _:
+            return checkType(assigment_expr, scope)
+
