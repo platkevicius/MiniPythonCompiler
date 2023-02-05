@@ -97,7 +97,7 @@ class RiscvGenerator(Generator):
             self.generated_code.append('addi sp, sp, 4')
 
         self.generated_code.append(f'jal {function.name}')
-        self.generated_code.append('mv a0, t0')
+        self.generated_code.append('mv t0, a0')
 
         if scope.isInFunction():
             # retrieve arguments
@@ -112,9 +112,9 @@ class RiscvGenerator(Generator):
 
             # retrieve frame pointer
             self.generated_code.append('lw s11, 0(sp)')
-            self.generated_code.append('addi, sp, sp, 4')
+            self.generated_code.append('addi sp, sp, 4')
 
-        self.generated_code.append('addi, sp, sp, -4')
+        self.generated_code.append('addi sp, sp, -4')
         self.generated_code.append('sw t0, 0(sp)')
 
     def generateReturnStatement(self, ast, scope):
@@ -154,9 +154,10 @@ class RiscvGenerator(Generator):
                 self.generated_code.append(f'lw t0, 0(sp)')
                 self.generated_code.append(f'sw t0, {attr_offset}(s{variable.offset})')
             case Location.STACK:
+                relative = self.getRelativeRegister(scope, Location.STACK)
                 self.generated_code.append(f'lw t0, 0(sp)')
                 self.generated_code.append('addi sp, sp, 4')
-                self.generated_code.append(f'lw t1, {variable.offset * 4}(fp)')
+                self.generated_code.append(f'lw t1, {variable.offset * 4}({relative})')
                 self.generated_code.append(f'sw t0, {attr_offset}(t1)')
 
     def generateStructResolve(self, struct, scope):
@@ -173,7 +174,8 @@ class RiscvGenerator(Generator):
                 self.generated_code.append('addi sp, sp, -4')
                 self.generated_code.append(f'sw t0, 0(sp)')
             case Location.STACK:
-                self.generated_code.append(f'lw t0, {variable.offset * 4}(fp)')
+                relative = self.getRelativeRegister(scope, Location.STACK)
+                self.generated_code.append(f'lw t0, {variable.offset * 4}({relative})')
                 self.generated_code.append('addi sp, sp, -4')
                 self.generated_code.append(f'lw t0, {attr_offset}(t0)')
                 self.generated_code.append(f'sw t0, 0(sp)')
