@@ -1,3 +1,5 @@
+import struct
+
 from lark import Lark
 from argparse import ArgumentParser
 
@@ -57,7 +59,7 @@ gen = None
 if architecture == 'mi':
     gen = MiGenerator(ast, MiAllocator(None, 0, 0))
 else:
-    gen = RiscvGenerator(ast, RiscvAllocator(None, 0, 0))
+    gen = RiscvGenerator(ast, RiscvAllocator(None, 0, 0, 0))
 
 generated_code = gen.generateMachineCode()
 

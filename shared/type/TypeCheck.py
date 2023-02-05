@@ -21,7 +21,14 @@ from syntaxTree.struct.StructResolve import StructResolve
 
 
 def typePass(goals):
+    definitions = []
     scope = MiAllocator(None, 0, 0)
+    for goal in goals:
+        if type(goal) is FunctionCreate or type(goal) is StructNode:
+            definitions.append(goal)
+            checkType(goal, scope)
+
+    goals = [x for x in goals if x not in definitions]
     for goal in goals:
         checkType(goal, scope)
 

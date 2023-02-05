@@ -1,3 +1,5 @@
+import struct
+
 from riscv.RiscvAllocator import RiscvAllocator
 from riscv.FunctionEnvironment import FunctionEnvironment
 from shared.Generator import Generator
@@ -5,6 +7,7 @@ from shared.allocation.Location import Location
 from shared.function import FunctionDefinitions
 from shared.function.Function import Function
 from shared.struct import StructDefinitions
+from shared.type import TypeCheck
 from shared.variables.Variable import Variable
 from shared.SymbolGenerator import createNewSymbol
 from syntaxTree.function.FunctionCreate import FunctionCreate
@@ -14,6 +17,7 @@ from syntaxTree.struct.StructNode import StructNode
 class RiscvGenerator(Generator):
     def __init__(self, goals, scope):
         self.generated_code = []
+        self.data_section = []
         super().__init__(goals, scope)
 
     def generateMachineCode(self):
@@ -33,6 +37,13 @@ class RiscvGenerator(Generator):
         self.goals = [x for x in self.goals if x not in definitions]
         for goal in self.goals:
             self.generate(goal, self.scope)
+
+        if len(self.data_section) != 0:
+            self.generated_code.append('.data:')
+
+        for data in self.data_section:
+            self.generated_code.append(data)
+
         return self.generated_code
 
     def generateFunctionCreate(self, ast, scope):
@@ -48,10 +59,10 @@ class RiscvGenerator(Generator):
             param_scope.addParam(param)
         param_scope.addParam(Variable('return', return_type))
 
-        body_scope = RiscvAllocator(param_scope, param_scope.dataInRegister, 0)
+        body_scope = RiscvAllocator(param_scope, param_scope.dataInRegister, 0, 0)
         self.generated_code.append(name + ': ')
         self.pushr(body_scope)
-        self.generated_code.append('mv s11, sp')  # todo: this is the last problem for riscv functions!!!
+        self.generated_code.append('mv s11, sp')
         for statement in ast.statements:
             self.generate(statement, body_scope)
 
@@ -82,7 +93,7 @@ class RiscvGenerator(Generator):
             self.generate(expr, scope)
 
         for i in range(0, len(function.params)):
-            self.generated_code.append(f'lw a{i}, 0(sp)')  # todo: problem! Parameter is being deleted and num is not anymore in a0
+            self.generated_code.append(f'lw a{i}, 0(sp)')
             self.generated_code.append('addi sp, sp, 4')
 
         self.generated_code.append(f'jal {function.name}')
@@ -108,11 +119,10 @@ class RiscvGenerator(Generator):
 
     def generateReturnStatement(self, ast, scope):
         return_data = scope.findData('return')
-        lop = self.getSpaceForType(return_data.data.type_def)
 
         self.generate(ast.expression, scope)
 
-        self.generated_code.append(f'l{lop} a0, 0(sp)')
+        self.generated_code.append(f'lw a0, 0(sp)')
         self.generated_code.append('addi sp, sp, 4')
         self.generated_code.append('mv sp, s11')  # reset Stack Pointer
         self.popr(scope)
@@ -137,18 +147,17 @@ class RiscvGenerator(Generator):
 
         self.generate(struct.value, scope)
 
-        lop = self.getSpaceForType(type_def)
         attr_offset = str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute))
 
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append(f'l{lop} t0, 0(sp)')
-                self.generated_code.append(f's{lop} t0, {attr_offset}(s{variable.offset})')
+                self.generated_code.append(f'lw t0, 0(sp)')
+                self.generated_code.append(f'sw t0, {attr_offset}(s{variable.offset})')
             case Location.STACK:
-                self.generated_code.append(f'l{lop} t0, 0(sp)')
+                self.generated_code.append(f'lw t0, 0(sp)')
                 self.generated_code.append('addi sp, sp, 4')
-                self.generated_code.append(f'l{lop} t1, {variable.offset * 4}(fp)')
-                self.generated_code.append(f's{lop} t0, {attr_offset}(t1)')
+                self.generated_code.append(f'lw t1, {variable.offset * 4}(fp)')
+                self.generated_code.append(f'sw t0, {attr_offset}(t1)')
 
     def generateStructResolve(self, struct, scope):
         variable = scope.findData(struct.name)
@@ -156,22 +165,21 @@ class RiscvGenerator(Generator):
         struct_attribute = struct.attribute
         type_def = StructDefinitions.findTypeForAttribute(struct_name, struct_attribute)
 
-        lop = self.getSpaceForType(type_def)
         attr_offset = str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute))
 
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append(f'l{lop} t0, {attr_offset}(s{variable.offset})')
+                self.generated_code.append(f'lw t0, {attr_offset}(s{variable.offset})')
                 self.generated_code.append('addi sp, sp, -4')
-                self.generated_code.append(f's{lop} t0, 0(sp)')
+                self.generated_code.append(f'sw t0, 0(sp)')
             case Location.STACK:
-                self.generated_code.append(f'l{lop} t0, {variable.offset * 4}(fp)')
+                self.generated_code.append(f'lw t0, {variable.offset * 4}(fp)')
                 self.generated_code.append('addi sp, sp, -4')
-                self.generated_code.append(f'l{lop} t0, {attr_offset}(t0)')
-                self.generated_code.append(f's{lop} t0, 0(sp)')
+                self.generated_code.append(f'lw t0, {attr_offset}(t0)')
+                self.generated_code.append(f'sw t0, 0(sp)')
 
     def generateLoopStatement(self, while_statement, scope):
-        local_scope = RiscvAllocator(scope, scope.dataInRegister, scope.dataInStack)
+        local_scope = RiscvAllocator(scope, scope.data_in_register_int, scope.dataInStack, 0)
         while_symbol = createNewSymbol('while')
         continue_symbol = createNewSymbol('continue')
 
@@ -196,7 +204,7 @@ class RiscvGenerator(Generator):
         self.generated_code.append(f'addi sp, sp, {local_variable_offset}')  # reset Stack Pointer
 
     def generateIfStatement(self, if_statement, scope):
-        local_scope = RiscvAllocator(scope, scope.dataInRegister, scope.dataInStack)
+        local_scope = RiscvAllocator(scope, scope.data_in_register_int, scope.dataInStack, 0)
         else_symbol = createNewSymbol('else')
         continue_symbol = createNewSymbol('continue')
 
@@ -228,12 +236,16 @@ class RiscvGenerator(Generator):
         name = variable_creation.name
         type_def = variable_creation.type_def
 
+        prefix = ""
+        if type_def == 'float':
+            prefix = "f"
+
         self.generate(variable_creation.value, scope)
         variable = scope.addData(Variable(name, type_def))
 
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append(f'lw s{variable.offset}, 0(sp)')
+                self.generated_code.append(f'{prefix}lw {prefix}s{variable.offset}, 0(sp)')
                 self.generated_code.append('addi sp, sp, 4')  # reset stack pointer
 
     def generateVariableAssignment(self, variable_assignment, scope):
@@ -242,14 +254,17 @@ class RiscvGenerator(Generator):
         variable = scope.findData(name)
         type_def = variable.data.type_def
 
+        prefix = ""
+        if type_def == 'float':
+            prefix = "f"
+
         relative_register = self.getRelativeRegister(scope, Location.STACK)
 
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append(f'lw s{variable.offset}, 0(sp)')
+                self.generated_code.append(f'{prefix}lw {prefix}s{variable.offset}, 0(sp)')
             case Location.STACK:
-                lop = self.getSpaceForType(type_def)
-                self.generated_code.append(f's{lop} t0, {variable.offset * 4}({relative_register})')
+                self.generated_code.append(f'{prefix}sw {prefix}t0, {variable.offset * 4}({relative_register})')
 
         self.generated_code.append('addi sp, sp, 4')
 
@@ -257,83 +272,116 @@ class RiscvGenerator(Generator):
         variable = scope.findData(variable.name)
         type_def = variable.data.type_def
 
-        lop = self.getSpaceForType(type_def)
+        prefix = ""
+        if type_def == 'float':
+            prefix = "f"
 
         self.generated_code.append('addi sp, sp, -4')
         match variable.location:
             case Location.REGISTER:
                 relative_register = self.getRelativeRegister(scope, Location.REGISTER)
-                self.generated_code.append(f's{lop} {relative_register}{variable.offset}, 0(sp)')
+                self.generated_code.append(f'{prefix}sw {prefix}{relative_register}{variable.offset}, 0(sp)')
             case Location.STACK:
                 relative_register = self.getRelativeRegister(scope, Location.STACK)
-                self.generated_code.append(f'l{lop} t0, {variable.offset * 4}({relative_register})')
-                self.generated_code.append(f's{lop} t0, 0(sp)')
+                self.generated_code.append(f'{prefix}lw {prefix}t0, {variable.offset * 4}({relative_register})')
+                self.generated_code.append(f'{prefix}sw {prefix}t0, 0(sp)')
 
     def generateBinaryOp(self, binary_op, scope):
         self.generate(binary_op.left, scope)
         self.generate(binary_op.right, scope)
 
+        type_def = TypeCheck.checkType(binary_op, scope)
+
+        prefix = ""
+        if type_def == 'float':
+            prefix = "f"
+
         op = binary_op.op
         match op:
             case '+':
-                self.generateArithmetic(op)
+                self.generateArithmetic(op, type_def)
             case '-':
-                self.generateArithmetic(op)
+                self.generateArithmetic(op, type_def)
             case '*':
-                self.generateArithmetic(op)
+                self.generateArithmetic(op, type_def)
             case '/':
-                self.generateArithmetic(op)
+                self.generateArithmetic(op, type_def)
             case '>':
-                self.generateComparison('>')
+                self.generateComparison('>', type_def)
             case '>=':
-                self.generateComparison('>=')
+                self.generateComparison('>=', type_def)
             case '==':
-                self.generateComparison('==')
+                self.generateComparison('==', type_def)
             case '<=':
-                self.generateComparison('<=')
+                self.generateComparison('<=', type_def)
             case '<':
-                self.generateComparison('<')
+                self.generateComparison('<', type_def)
             case 'or':
-                self.generated_code.append('lw t0, 4(sp)')
-                self.generated_code.append('lw t1, 0(sp)')
+                self.generated_code.append(f'{prefix}lw {prefix}t0, 4(sp)')
+                self.generated_code.append(f'{prefix}lw {prefix}t1, 0(sp)')
 
-                self.generated_code.append('or t0, t0, t1')
+                self.generated_code.append(f'or {prefix}t0, {prefix}t0, {prefix}t1')
                 self.generated_code.append('addi sp, sp, 4')
-                self.generated_code.append('sw t0, 0(sp)')
+                self.generated_code.append(f'{prefix}sw {prefix}t0, 0(sp)')
             case 'and':
-                self.generated_code.append('lw t0, 4(sp)')
-                self.generated_code.append('lw t1, 0(sp)')
+                self.generated_code.append(f'{prefix}lw {prefix}t0, 4(sp)')
+                self.generated_code.append(f'{prefix}lw {prefix}t1, 0(sp)')
 
-                self.generated_code.append('and t0, t0, t1')
+                self.generated_code.append(f'and {prefix}t0, {prefix}t0, {prefix}t1')
                 self.generated_code.append('addi sp, sp, 4')
-                self.generated_code.append('sw t0, 0(sp)')
+                self.generated_code.append(f'{prefix}sw {prefix}t0, 0(sp)')
 
-    def generateArithmetic(self, op):
-        mappings = {"+": "add",
-                    "-": "sub",
-                    "/": "div",
-                    "*": "mul"}
+    def generateArithmetic(self, op, type_def):
+        mappingsInt = {"+": "add",
+                       "-": "sub",
+                       "/": "div",
+                       "*": "mul"}
 
-        self.generated_code.append('lw t0, 4(sp)')
-        self.generated_code.append('lw t1, 0(sp)')
+        mappingFloat = {"+": "fadd.s",
+                        "-": "fsub.s",
+                        "/": "fdiv.s",
+                        "*": "fmul.s"}
 
-        self.generated_code.append(f'{mappings.get(op)} t0, t0, t1')
+        prefix = ""
+        if type_def == 'float':
+            command = mappingFloat.get(op)
+            prefix = "f"
+        else:
+            command = mappingsInt.get(op)
+
+        self.generated_code.append(f'{prefix}lw {prefix}t0, 4(sp)')
+        self.generated_code.append(f'{prefix}lw {prefix}t1, 0(sp)')
+
+        self.generated_code.append(f'{command} {prefix}t0, {prefix}t0, {prefix}t1')
         self.generated_code.append('addi sp, sp, 4')
-        self.generated_code.append('sw t0, 0(sp)')
+        self.generated_code.append(f'{prefix}sw {prefix}t0, 0(sp)')
 
-    def generateComparison(self, op):
-        mappings = {">": "BGT",
-                    ">=": "BGE",
-                    "==": "BEQ",
-                    "<=": "BLE",
-                    "<": "BLT"}
+    def generateComparison(self, op, type_def):
+        mappingsInt = {">": "BGT",
+                       ">=": "BGE",
+                       "==": "BEQ",
+                       "<=": "BLE",
+                       "<": "BLT"}
+        mappingsFloat = {">": "FBGT.S",
+                         ">=": "FBGE.S",
+                         "==": "FBEQ.S",
+                         "<=": "FBLE.S",
+                         "<": "FBLT.S"}
+
+        prefix = ""
+        if type_def == 'float':
+            command = mappingsFloat.get(op)
+            prefix = "f"
+        else:
+            command = mappingsInt.get(op)
+
         symbol = createNewSymbol('logicalTrue')
         symbol_continue = createNewSymbol('continue')
 
-        self.generated_code.append('lw t0, 4(sp)')
-        self.generated_code.append('lw t1, 0(sp)')
+        self.generated_code.append(f'{prefix}lw {prefix}t0, 4(sp)')
+        self.generated_code.append(f'{prefix}lw {prefix}t1, 0(sp)')
         self.generated_code.append('addi sp, sp, 4')
-        self.generated_code.append(f'{mappings.get(op)} t0, t1, {symbol}')
+        self.generated_code.append(f'{command} {prefix}t0, {prefix}t1, {symbol}')
         self.generated_code.append('add t0, zero, zero')
         self.generated_code.append('sw t0, 0(sp)')
         self.generated_code.append(f'j {symbol_continue}')
@@ -354,13 +402,20 @@ class RiscvGenerator(Generator):
             self.generated_code.append('addi t0, zero, 0')
             self.generated_code.append('sw t0, 0(sp)')
         else:
-            self.generated_code.append('addi sp, sp, -4')
-            self.generated_code.append(f'addi t0, zero, {constant.value}')
-            self.generated_code.append('sw t0, 0(sp)')
+            if type(constant.value) == int:
+                self.generated_code.append('addi sp, sp, -4')
+                self.generated_code.append(f'addi t0, zero, {constant.value}')
+                self.generated_code.append('sw t0, 0(sp)')
+            else:
+                symbol = createNewSymbol('float')
+                self.data_section.append(f'{symbol}: .word {self.float_to_hex(constant.value)}')
+                self.generated_code.append(f'lui t0, %hi({symbol})')
+                self.generated_code.append(f'flw ft0, %lo({symbol})(t0)')
+                self.generated_code.append('fsw ft0, 0(sp)')
 
     def generateInit(self):
         return '''
-.section .text
+.text
 .global __start
     
 __start:
@@ -370,13 +425,6 @@ mv t6, gp
 
     def generateHeap(self):
         return ''
-
-    def getSpaceForType(self, type_def):
-        match type_def:
-            case 'int':
-                return 'w'
-            case _:
-                return 'w'
 
     def popr(self, scope):
         registerCount = scope.findUsedRegisters()
@@ -406,3 +454,7 @@ mv t6, gp
                     return 'fp'
                 case True:
                     return 's11'
+
+    def float_to_hex(self, num):
+        bits, = struct.unpack('!I', struct.pack('!f', num))
+        return hex(int("{:032b}".format(bits), 2))

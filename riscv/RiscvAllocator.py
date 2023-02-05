@@ -4,9 +4,10 @@ from shared.allocation.Location import Location
 
 class RiscvAllocator:
 
-    def __init__(self, parent, data_in_register, data_in_stack):
+    def __init__(self, parent, data_in_register_int, data_in_register_float, data_in_stack):
         self.parent = parent
-        self.dataInRegister = data_in_register
+        self.data_in_register_int = data_in_register_int
+        self.data_in_register_float = data_in_register_float
         self.dataInStack = data_in_stack
         self.register = {}
         self.stack = {}
@@ -14,16 +15,30 @@ class RiscvAllocator:
     def addData(self, data):
         if data.name in self.register or data.name in self.stack:
             raise ValueError('There is already declaration with the name: ' + data.name)
-        if self.dataInRegister != 11:
-            self.dataInRegister += 1
-            var = Data(data, self.dataInRegister, Location.REGISTER)
-            self.register[data.name] = var
-            return var
-        else:
-            self.dataInStack += 1
-            var = Data(data, -self.dataInStack, Location.STACK)
-            self.stack[data.name] = var
-            return var
+        match data.type_def:
+            case 'float':
+                if self.data_in_register_float != 11:
+                    self.data_in_register_float += 1
+                    var = Data(data, self.data_in_register_float, Location.REGISTER)
+                    self.register[data.name] = var
+                    return var
+                else:
+                    self.dataInStack += 1
+                    var = Data(data, -self.dataInStack, Location.STACK)
+                    self.stack[data.name] = var
+                    return var
+            case _:
+                if self.data_in_register_int != 11:
+                    self.data_in_register_int += 1
+                    var = Data(data, self.data_in_register_int, Location.REGISTER)
+                    self.register[data.name] = var
+                    return var
+                else:
+                    self.dataInStack += 1
+                    var = Data(data, -self.dataInStack, Location.STACK)
+                    self.stack[data.name] = var
+                    return var
+
 
     def findData(self, name):
         register_data = self.register.get(name, None)
