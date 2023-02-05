@@ -179,7 +179,7 @@ class RiscvGenerator(Generator):
                 self.generated_code.append(f'sw t0, 0(sp)')
 
     def generateLoopStatement(self, while_statement, scope):
-        local_scope = RiscvAllocator(scope, scope.data_in_register_int, scope.dataInStack, 0)
+        local_scope = RiscvAllocator(scope, scope.data_in_register_int, 0, scope.dataInStack)
         while_symbol = createNewSymbol('while')
         continue_symbol = createNewSymbol('continue')
 
@@ -204,7 +204,7 @@ class RiscvGenerator(Generator):
         self.generated_code.append(f'addi sp, sp, {local_variable_offset}')  # reset Stack Pointer
 
     def generateIfStatement(self, if_statement, scope):
-        local_scope = RiscvAllocator(scope, scope.data_in_register_int, scope.dataInStack, 0)
+        local_scope = RiscvAllocator(scope, scope.data_in_register_int, 0, scope.dataInStack)
         else_symbol = createNewSymbol('else')
         continue_symbol = createNewSymbol('continue')
 
