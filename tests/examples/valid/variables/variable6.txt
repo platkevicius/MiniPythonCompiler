@@ -1,8 +1,9 @@
 var erg: float = 3.5
 var res: float = 4.5
 var integer: int = 10
+var i: int = 3
 
-var ergebnis: float = erg + res
+var ergebnis: float = erg + res + integer + i
 erg = 9.5
 
 var compare: boolean = erg >= res

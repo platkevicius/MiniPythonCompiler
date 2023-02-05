@@ -289,10 +289,23 @@ class RiscvGenerator(Generator):
                 self.generated_code.append(f'{prefix}sw {prefix}t0, 0(sp)')
 
     def generateBinaryOp(self, binary_op, scope):
+        type_def = TypeCheck.checkType(binary_op, scope)
+
+        type_expr1 = TypeCheck.checkType(binary_op.left, scope)
         self.generate(binary_op.left, scope)
+
+        if type_expr1 == 'int' and type_def == 'float':
+            self.generated_code.append('lw t0, 0(sp)')
+            self.generated_code.append('fcvt.s.w ft0, t0')
+            self.generated_code.append('fsw ft0, 0(sp)')
+
+        type_expr2 = TypeCheck.checkType(binary_op.right, scope)
         self.generate(binary_op.right, scope)
 
-        type_def = TypeCheck.checkType(binary_op, scope)
+        if type_expr2 == 'int' and type_def == 'float':
+            self.generated_code.append('lw t0, 0(sp)')
+            self.generated_code.append('fcvt.s.w ft0, t0')
+            self.generated_code.append('fsw ft0, 0(sp)')
 
         prefix = ""
         if type_def == 'float':
