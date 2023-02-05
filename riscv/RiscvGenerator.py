@@ -292,17 +292,21 @@ class RiscvGenerator(Generator):
         type_def = TypeCheck.checkType(binary_op, scope)
 
         type_expr1 = TypeCheck.checkType(binary_op.left, scope)
+        type_expr2 = TypeCheck.checkType(binary_op.right, scope)
+
         self.generate(binary_op.left, scope)
 
-        if type_expr1 == 'int' and type_def == 'float':
+        if (type_expr1 == 'int' and type_def == 'float') or \
+                (type_expr1 == 'int' and type_expr2 == 'float'):
             self.generated_code.append('lw t0, 0(sp)')
             self.generated_code.append('fcvt.s.w ft0, t0')
             self.generated_code.append('fsw ft0, 0(sp)')
+            type_expr1 = 'float'
 
-        type_expr2 = TypeCheck.checkType(binary_op.right, scope)
         self.generate(binary_op.right, scope)
 
-        if type_expr2 == 'int' and type_def == 'float':
+        if (type_expr2 == 'int' and type_def == 'float') or \
+                (type_expr2 == 'int' and type_def == 'float'):
             self.generated_code.append('lw t0, 0(sp)')
             self.generated_code.append('fcvt.s.w ft0, t0')
             self.generated_code.append('fsw ft0, 0(sp)')
@@ -322,15 +326,15 @@ class RiscvGenerator(Generator):
             case '/':
                 self.generateArithmetic(op, type_def)
             case '>':
-                self.generateComparison('>', type_def)
+                self.generateComparison('>', type_expr1)
             case '>=':
-                self.generateComparison('>=', type_def)
+                self.generateComparison('>=', type_expr1)
             case '==':
-                self.generateComparison('==', type_def)
+                self.generateComparison('==', type_expr1)
             case '<=':
-                self.generateComparison('<=', type_def)
+                self.generateComparison('<=', type_expr1)
             case '<':
-                self.generateComparison('<', type_def)
+                self.generateComparison('<', type_expr1)
             case 'or':
                 self.generated_code.append(f'{prefix}lw {prefix}t0, 4(sp)')
                 self.generated_code.append(f'{prefix}lw {prefix}t1, 0(sp)')
@@ -372,16 +376,16 @@ class RiscvGenerator(Generator):
         self.generated_code.append(f'{prefix}sw {prefix}t0, 0(sp)')
 
     def generateComparison(self, op, type_def):
-        mappingsInt = {">": "BGT",
-                       ">=": "BGE",
-                       "==": "BEQ",
-                       "<=": "BLE",
-                       "<": "BLT"}
-        mappingsFloat = {">": "FBGT.S",
-                         ">=": "FBGE.S",
-                         "==": "FBEQ.S",
-                         "<=": "FBLE.S",
-                         "<": "FBLT.S"}
+        mappingsInt = {">": "bgt",
+                       ">=": "bge",
+                       "==": "beq",
+                       "<=": "ble",
+                       "<": "blt"}
+        mappingsFloat = {">": "flt.s",
+                         ">=": "fle.s",
+                         "==": "feq.s",
+                         "<=": "fle.s",
+                         "<": "flt.s"}
 
         prefix = ""
         if type_def == 'float':
@@ -393,10 +397,22 @@ class RiscvGenerator(Generator):
         symbol = createNewSymbol('logicalTrue')
         symbol_continue = createNewSymbol('continue')
 
-        self.generated_code.append(f'{prefix}lw {prefix}t0, 4(sp)')
-        self.generated_code.append(f'{prefix}lw {prefix}t1, 0(sp)')
+        if (op == '>' or op == '>=') and type_def == 'float':
+            self.generated_code.append(f'{prefix}lw {prefix}t1, 4(sp)')
+            self.generated_code.append(f'{prefix}lw {prefix}t0, 0(sp)')
+        else:
+            self.generated_code.append(f'{prefix}lw {prefix}t0, 4(sp)')
+            self.generated_code.append(f'{prefix}lw {prefix}t1, 0(sp)')
+
         self.generated_code.append('addi sp, sp, 4')
-        self.generated_code.append(f'{command} {prefix}t0, {prefix}t1, {symbol}')
+
+        if type_def == 'int':
+            self.generated_code.append(f'{command} {prefix}t0, {prefix}t1, {symbol}')
+        else:
+            self.generated_code.append(f'{command} t0, ft0, ft1')
+            self.generated_code.append('li t1, 1')
+            self.generated_code.append(f'beq t0, t1, {symbol}')
+
         self.generated_code.append('add t0, zero, zero')
         self.generated_code.append('sw t0, 0(sp)')
         self.generated_code.append(f'j {symbol_continue}')

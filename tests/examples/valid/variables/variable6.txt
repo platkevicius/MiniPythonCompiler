@@ -7,3 +7,4 @@ var ergebnis: float = erg + res + integer + i
 erg = 9.5
 
 var compare: boolean = erg >= res
+var compareFloatInt: boolean = integer <= res
