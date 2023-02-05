@@ -30,5 +30,7 @@ def getOffsetForType(type_def):
     match type_def:
         case 'int':
             return 4
+        case 'float':
+            return 4
         case 'boolean':
             return 1

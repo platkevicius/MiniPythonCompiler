@@ -7,7 +7,7 @@ from shared.allocation.Location import Location
 from shared.function import FunctionDefinitions
 from shared.function.Function import Function
 from shared.struct import StructDefinitions
-from shared.type import TypeCheck
+from shared.type import TypeResolver
 from shared.variables.Variable import Variable
 from shared.SymbolGenerator import createNewSymbol
 from syntaxTree.function.FunctionCreate import FunctionCreate
@@ -118,8 +118,6 @@ class RiscvGenerator(Generator):
         self.generated_code.append('sw t0, 0(sp)')
 
     def generateReturnStatement(self, ast, scope):
-        return_data = scope.findData('return')
-
         self.generate(ast.expression, scope)
 
         self.generated_code.append(f'lw a0, 0(sp)')
@@ -143,42 +141,50 @@ class RiscvGenerator(Generator):
         variable = scope.findData(struct.name)
         struct_name = variable.data.type_def
         struct_attribute = struct.attribute
-        type_def = StructDefinitions.findTypeForAttribute(struct_name, struct_attribute)
 
         self.generate(struct.value, scope)
 
         attr_offset = str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute))
+        type_def = StructDefinitions.findTypeForAttribute(struct_name, struct_attribute)
+
+        prefix = ''
+        if type_def == 'float':
+            prefix = 'f'
 
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append(f'lw t0, 0(sp)')
-                self.generated_code.append(f'sw t0, {attr_offset}(s{variable.offset})')
+                self.generated_code.append(f'{prefix}lw {prefix}t0, 0(sp)')
+                self.generated_code.append(f'{prefix}sw {prefix}t0, {attr_offset}(s{variable.offset})')
             case Location.STACK:
                 relative = self.getRelativeRegister(scope, Location.STACK)
-                self.generated_code.append(f'lw t0, 0(sp)')
+                self.generated_code.append(f'{prefix}lw {prefix}t0, 0(sp)')
                 self.generated_code.append('addi sp, sp, 4')
                 self.generated_code.append(f'lw t1, {variable.offset * 4}({relative})')
-                self.generated_code.append(f'sw t0, {attr_offset}(t1)')
+                self.generated_code.append(f'{prefix}sw {prefix}t0, {attr_offset}(t1)')
 
     def generateStructResolve(self, struct, scope):
         variable = scope.findData(struct.name)
         struct_name = variable.data.type_def
         struct_attribute = struct.attribute
-        type_def = StructDefinitions.findTypeForAttribute(struct_name, struct_attribute)
 
         attr_offset = str(StructDefinitions.getOffsetForAttribute(struct_name, struct_attribute))
+        type_def = StructDefinitions.findTypeForAttribute(struct_name, struct_attribute)
+
+        prefix = ''
+        if type_def == 'float':
+            prefix = 'f'
 
         match variable.location:
             case Location.REGISTER:
-                self.generated_code.append(f'lw t0, {attr_offset}(s{variable.offset})')
+                self.generated_code.append(f'{prefix}lw {prefix}t0, {attr_offset}(s{variable.offset})')
                 self.generated_code.append('addi sp, sp, -4')
-                self.generated_code.append(f'sw t0, 0(sp)')
+                self.generated_code.append(f'{prefix}sw {prefix}t0, 0(sp)')
             case Location.STACK:
                 relative = self.getRelativeRegister(scope, Location.STACK)
-                self.generated_code.append(f'lw t0, {variable.offset * 4}({relative})')
+                self.generated_code.append(f'{prefix}lw {prefix}t0, {variable.offset * 4}({relative})')
                 self.generated_code.append('addi sp, sp, -4')
-                self.generated_code.append(f'lw t0, {attr_offset}(t0)')
-                self.generated_code.append(f'sw t0, 0(sp)')
+                self.generated_code.append(f'{prefix}lw {prefix}t0, {attr_offset}(t0)')
+                self.generated_code.append(f'{prefix}sw {prefix}t0, 0(sp)')
 
     def generateLoopStatement(self, while_statement, scope):
         local_scope = RiscvAllocator(scope, scope.data_in_register_int, 0, scope.dataInStack)
@@ -289,10 +295,10 @@ class RiscvGenerator(Generator):
                 self.generated_code.append(f'{prefix}sw {prefix}t0, 0(sp)')
 
     def generateBinaryOp(self, binary_op, scope):
-        type_def = TypeCheck.checkType(binary_op, scope)
+        type_def = TypeResolver.resolveType(binary_op, scope)
 
-        type_expr1 = TypeCheck.checkType(binary_op.left, scope)
-        type_expr2 = TypeCheck.checkType(binary_op.right, scope)
+        type_expr1 = TypeResolver.resolveType(binary_op.left, scope)
+        type_expr2 = TypeResolver.resolveType(binary_op.right, scope)
 
         self.generate(binary_op.left, scope)
 

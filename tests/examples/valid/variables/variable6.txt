@@ -1,3 +1,10 @@
+struct Pair:
+    a: int,
+    hero: float
+
+var structTest: Pair = new Pair()
+structTest.hero = 123.25
+
 var erg: float = 3.5
 var res: float = 4.5
 var integer: int = 10
@@ -8,3 +15,8 @@ erg = 9.5
 
 var compare: boolean = erg >= res
 var compareFloatInt: boolean = integer <= res
+
+if erg >= res:
+    erg = structTest.hero
+else:
+    erg = 0.0
