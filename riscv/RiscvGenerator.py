@@ -57,6 +57,7 @@ class RiscvGenerator(Generator):
 
         for param in ast.params_list:
             param_scope.addParam(param)
+
         param_scope.addParam(Variable('return', return_type))
 
         body_scope = RiscvAllocator(param_scope, param_scope.dataInRegister, 0, 0)
@@ -82,26 +83,52 @@ class RiscvGenerator(Generator):
             self.generated_code.append('sw ra, 0(sp)')
 
             # save arguments
-            param_offset = scope.getParams()
+            param_offset = scope.getNonFloatParams()
             for i in reversed(range(0, param_offset - 1)):
                 self.generated_code.append('addi sp, sp, -4')
                 self.generated_code.append(f'sw a{i}, 0(sp)')
+
+            param_offset = scope.getFloatParams()
+            for i in reversed(range(0, param_offset - 1)):
+                self.generated_code.append('addi sp, sp, -4')
+                self.generated_code.append(f'fsw fa{i}, 0(sp)')
 
         # remove parameter from stack
         for i in range(0, len(function.params)):
             expr = ast.params[i]
             self.generate(expr, scope)
 
-        for i in range(0, len(function.params)):
-            self.generated_code.append(f'lw a{i}, 0(sp)')
+        floatCount = FunctionDefinitions.countFloatParams(ast.name)-1
+        intCount = FunctionDefinitions.countNonFloatParams(ast.name)-1
+        for i in reversed(range(0, len(function.params))):
+            prefix = ''
+            index = intCount
+            if function.params[i].type_def == 'float':
+                prefix = 'f'
+                index = floatCount
+                floatCount -= 1
+            else:
+                intCount -= 1
+
+            self.generated_code.append(f'{prefix}lw {prefix}a{index}, 0(sp)')
             self.generated_code.append('addi sp, sp, 4')
 
         self.generated_code.append(f'jal {function.name}')
-        self.generated_code.append('mv t0, a0')
+
+        if function.return_type == 'float':
+            self.generated_code.append('fmv.w.x ft0, zero')
+            self.generated_code.append('fadd.s ft0, ft0, fa0')
+        else:
+            self.generated_code.append('mv t0, a0')
 
         if scope.isInFunction():
             # retrieve arguments
-            param_offset = scope.getParams()
+            param_offset = scope.getFloatParams()
+            for i in range(0, param_offset - 1):
+                self.generated_code.append(f'flw fa{i}, 0(sp)')
+                self.generated_code.append('addi sp, sp, 4')
+
+            param_offset = scope.getNonFloatParams()
             for i in range(0, param_offset - 1):
                 self.generated_code.append(f'lw a{i}, 0(sp)')
                 self.generated_code.append('addi sp, sp, 4')
@@ -115,12 +142,21 @@ class RiscvGenerator(Generator):
             self.generated_code.append('addi sp, sp, 4')
 
         self.generated_code.append('addi sp, sp, -4')
-        self.generated_code.append('sw t0, 0(sp)')
+        if function.return_type == 'float':
+            self.generated_code.append(f'fsw ft0, 0(sp)')
+        else:
+            self.generated_code.append(f'sw t0, 0(sp)')
 
     def generateReturnStatement(self, ast, scope):
+        return_data = scope.findData('return')
+        type_def = return_data.data.type_def
+        prefix = ''
+        if type_def == 'float':
+            prefix = 'f'
+
         self.generate(ast.expression, scope)
 
-        self.generated_code.append(f'lw a0, 0(sp)')
+        self.generated_code.append(f'{prefix}lw {prefix}a0, 0(sp)')
         self.generated_code.append('addi sp, sp, 4')
         self.generated_code.append('mv sp, s11')  # reset Stack Pointer
         self.popr(scope)
@@ -448,6 +484,7 @@ class RiscvGenerator(Generator):
                 self.data_section.append(f'{symbol}: .word {self.float_to_hex(constant.value)}')
                 self.generated_code.append(f'lui t0, %hi({symbol})')
                 self.generated_code.append(f'flw ft0, %lo({symbol})(t0)')
+                self.generated_code.append('addi sp, sp, -4')
                 self.generated_code.append('fsw ft0, 0(sp)')
 
     def generateInit(self):

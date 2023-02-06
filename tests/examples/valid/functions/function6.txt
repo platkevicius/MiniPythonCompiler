@@ -1,0 +1,4 @@
+def test(num: float, numTwo: float, numThree: float, numFour: int, numFive: int) -> float:
+    return (num + numTwo + numFour) * numFive
+
+var erg: float = test(1.5, 2.18, 10.25, 10, 3)

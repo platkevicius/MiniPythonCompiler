@@ -11,17 +11,25 @@ class FunctionEnvironment:
         self.stack = {}
 
         if type(parent) is FunctionEnvironment:
-            self.paramOffset = parent.paramOffset
+            self.paramOffsetInt = parent.paramOffsetInt
+            self.paramOffsetFloat = parent.paramOffsetFloat
         else:
-            self.paramOffset = 0
+            self.paramOffsetInt = 0
+            self.paramOffsetFloat = 0
 
     def addParam(self, data):
         if data.name in self.stack:
             raise ValueError('There is already declaration with the name: ' + data.name)
 
-        var = Data(data, self.paramOffset, Location.REGISTER)
+        offset = self.paramOffsetInt
+        if data.type_def == 'float':
+            offset = self.paramOffsetFloat
+            self.paramOffsetFloat += 1
+        else:
+            self.paramOffsetInt += 1
+
+        var = Data(data, offset, Location.REGISTER)
         self.stack[data.name] = var
-        self.paramOffset += 1
 
     def addData(self, data):
         if data.name in self.stack:
@@ -58,9 +66,6 @@ class FunctionEnvironment:
 
     def isInFunction(self):
         return True
-
-    def getParams(self):
-        return self.paramOffset
 
     def findUsedRegisters(self):
         return self.parent.data_in_register_int

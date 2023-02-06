@@ -39,7 +39,6 @@ class RiscvAllocator:
                     self.stack[data.name] = var
                     return var
 
-
     def findData(self, name):
         register_data = self.register.get(name, None)
         stack_data = self.stack.get(name, None)
@@ -79,5 +78,3 @@ class RiscvAllocator:
             return -1
 
         return self.parent.findUsedRegisters()
-
-
