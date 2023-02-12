@@ -1,4 +1,7 @@
 from shared.variables.Variable import Variable
+from syntaxTree.arrays.ArrayAssignment import ArrayAssignment
+from syntaxTree.arrays.ArrayCreate import ArrayCreate
+from syntaxTree.arrays.ArrayIndexing import ArrayIndexing
 from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
 from syntaxTree.expression.VariableNode import VariableNode
@@ -81,12 +84,37 @@ def parse_tree_to_ast(e):
         return parse_tree_to_ast(e.children[0])
     elif e.data == 'conjunction':
         return parse_tree_to_ast(e.children[0])
+    elif e.data == 'array_create':
+        type_def = e.children[0]
+        dimensions = {}
+
+        for i in range(1, len(e.children)):
+            dimensions[i] = parse_tree_to_ast(e.children[i])
+        return ArrayCreate(type_def.data + ('[]'*len(dimensions)), dimensions)
+    elif e.data == 'array_indexing':
+        name = e.children[0]
+        dimensions = {}
+
+        for i in range(1, len(e.children)):
+            dimensions[i] = parse_tree_to_ast(e.children[i])
+        return ArrayIndexing(name, dimensions)
+    elif e.data == 'array_assignment':
+        name = e.children[0]
+        dimensions = {}
+
+        for i in range(1, len(e.children)-1):
+            dimensions[i] = parse_tree_to_ast(e.children[i])
+        return ArrayAssignment(name, dimensions, parse_tree_to_ast(e.children[len(e.children)-1]))
     elif e.data == 'variable_creation':
         name, type_def, expr = e.children
         if type_def.data == 'struct':
             type_def = type_def.children[0]
-            return VariableCreation(name, type_def, parse_tree_to_ast(expr))
-        return VariableCreation(name, type_def.data, parse_tree_to_ast(expr))
+        elif type_def.data == 'array':
+            child = type_def.children[0]
+            type_def = child.data + '[]'*(len(type_def.children)-1)
+        else:
+            type_def = type_def.data
+        return VariableCreation(name, type_def, parse_tree_to_ast(expr))
     elif e.data == 'variable_assignment':
         name, expr = e.children
         return VariableAssignment(name, parse_tree_to_ast(expr))

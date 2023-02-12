@@ -8,59 +8,64 @@ struct: "struct" WORD ":" _NL _INDENT struct_body _DEDENT
 
 struct_body: WORD ":" type ("," _NL WORD ":" type)* _NL
 
-statement: "if" disjunction ":" _NL _INDENT statement+ _DEDENT else_statement?              -> if
-    | "while" disjunction ":" _NL _INDENT statement+ _DEDENT                                -> while
-    | "for" WORD "in" "range(" sum "," sum ")" ":" _NL _INDENT statement+ _DEDENT           -> for
-    | "return" disjunction _NL*                                                             -> return
-    | WORD "=" disjunction _NL*                                                             -> variable_assignment
-    | "var" WORD ":" type ("=" (disjunction | struct_create))? _NL*                         -> variable_creation
-    | WORD "." WORD "=" disjunction _NL*                                                    -> struct_assignment
-    | WORD "[" sum "]" "=" disjunction _NL*                                                 -> array_assignment
+statement: "if" disjunction ":" _NL _INDENT statement+ _DEDENT else_statement?                  -> if
+    | "while" disjunction ":" _NL _INDENT statement+ _DEDENT                                    -> while
+    | "for" WORD "in" "range(" sum "," sum ")" ":" _NL _INDENT statement+ _DEDENT               -> for
+    | "return" disjunction _NL*                                                                 -> return
+    | WORD "=" disjunction _NL*                                                                 -> variable_assignment
+    | "var" WORD ":" (type | array) ("=" (disjunction | struct_create | array_create))? _NL*    -> variable_creation
+    | WORD "." WORD "=" disjunction _NL*                                                        -> struct_assignment
+    | WORD ("[" sum "]")+ "=" disjunction _NL*                                                  -> array_assignment
 
 struct_create: "new" WORD "()"
 
-type: "int"                                                                                 -> int
-    | "boolean"                                                                             -> boolean
-    | "float"                                                                               -> float
-    | WORD                                                                                  -> struct
+array_create: "new" type ("[" primary "]")+
+
+array: type brackets+
+
+brackets: "[]"
+
+type: "int"                                                                                     -> int
+    | "boolean"                                                                                 -> boolean
+    | "float"                                                                                   -> float
+    | WORD                                                                                      -> struct
 
 else_statement: "else" ":" _NL _INDENT statement+ _DEDENT
 
-disjunction: disjunction "or" conjunction                                                   -> or
-    | conjunction                                                                           -> conjunction
+disjunction: disjunction "or" conjunction                                                       -> or
+    | conjunction                                                                               -> conjunction
 
-conjunction: conjunction "and" comparison                                                   -> and
-    | comparison                                                                            -> comparison
+conjunction: conjunction "and" comparison                                                       -> and
+    | comparison                                                                                -> comparison
 
-comparison: sum "<=" sum                                                                    -> less_equals
-    | sum "<" sum                                                                           -> less
-    | sum ">=" sum                                                                          -> greater_equals
-    | sum ">" sum                                                                           -> greater
-    | sum "!=" sum                                                                          -> not_equals
-    | sum "==" sum                                                                          -> equals
-    | "(" disjunction ")"                                                                   -> grouping
-    | "true"                                                                                -> true
-    | "false"                                                                               -> false
-    | sum                                                                                   -> sum
+comparison: sum "<=" sum                                                                        -> less_equals
+    | sum "<" sum                                                                               -> less
+    | sum ">=" sum                                                                              -> greater_equals
+    | sum ">" sum                                                                               -> greater
+    | sum "!=" sum                                                                              -> not_equals
+    | sum "==" sum                                                                              -> equals
+    | "(" disjunction ")"                                                                       -> grouping
+    | "true"                                                                                    -> true
+    | "false"                                                                                   -> false
+    | sum                                                                                       -> sum
 
-sum: sum "+" term                                                                           -> add
-    | sum "-" term                                                                          -> minus
-    | term                                                                                  -> term
+sum: sum "+" term                                                                               -> add
+    | sum "-" term                                                                              -> minus
+    | term                                                                                      -> term
 
-term: term "*" factor                                                                       -> mult
-    | term "/" factor                                                                       -> div
-    | factor                                                                                -> factor
+term: term "*" factor                                                                           -> mult
+    | term "/" factor                                                                           -> div
+    | factor                                                                                    -> factor
 
-factor: "-" factor                                                                          -> neg
-    | primary                                                                               -> primary
+factor: "-" factor                                                                              -> neg
+    | primary                                                                                   -> primary
 
-primary: SIGNED_NUMBER                                                                      -> number
-    | WORD                                                                                  -> variable
-    | WORD "." WORD                                                                         -> struct_resolve
-    | WORD "[" sum "]"                                                                      -> array_indexing
-    | "["SIGNED_NUMBER ( "," SIGNED_NUMBER)*"]"                                             -> array_indexing_multi
-    | "(" sum ")"                                                                           -> grouping
-    | WORD "(" disjunction ( "," disjunction )* ")"                                         -> function_call
+primary: SIGNED_NUMBER                                                                          -> number
+    | WORD                                                                                      -> variable
+    | WORD "." WORD                                                                             -> struct_resolve
+    | WORD ("[" primary "]")+                                                                   -> array_indexing
+    | "(" sum ")"                                                                               -> grouping
+    | WORD "(" disjunction ( "," disjunction )* ")"                                             -> function_call
 
 %import common.WORD
 %import common.SIGNED_NUMBER

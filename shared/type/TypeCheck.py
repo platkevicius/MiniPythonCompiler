@@ -4,6 +4,9 @@ from shared.function import FunctionDefinitions
 from shared.function.Function import Function
 from shared.struct import StructDefinitions
 from shared.variables.Variable import Variable
+from syntaxTree.arrays.ArrayAssignment import ArrayAssignment
+from syntaxTree.arrays.ArrayCreate import ArrayCreate
+from syntaxTree.arrays.ArrayIndexing import ArrayIndexing
 from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
 from syntaxTree.expression.VariableNode import VariableNode
@@ -42,6 +45,12 @@ def checkType(ast, scope):
         return checkReturnStatement(ast, scope)
     if type(ast) is StructNode:
         return checkStruct(ast)
+    if type(ast) is ArrayCreate:
+        return checkArrayCreate(ast)
+    if type(ast) is ArrayAssignment:
+        pass
+    if type(ast) is ArrayIndexing:
+        pass
     if type(ast) is StructCreate:
         return checkStructCreate(ast)
     if type(ast) is StructAssignment:
@@ -103,6 +112,10 @@ def checkReturnStatement(ast, scope):
 
     if type_def != expr_type:
         raise ValueError('Wrong types')
+
+
+def checkArrayCreate(ast):
+    pass
 
 
 def checkStruct(ast):

@@ -1,0 +1,4 @@
+var arr: int[][] = new int[10][10]
+arr[3][4] = 100
+
+var res: int = arr[3][4]
