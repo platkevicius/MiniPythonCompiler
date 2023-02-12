@@ -1,12 +1,12 @@
 from mi.FunctionEnvironment import FunctionEnvironment
-from shared.type import TypeCheck
+from mi.MiAllocator import *
 from shared.Generator import Generator
+from shared.SymbolGenerator import createNewSymbol
 from shared.function import FunctionDefinitions
 from shared.function.Function import Function
 from shared.struct import StructDefinitions
+from shared.type import TypeResolver
 from shared.variables.Variable import Variable
-from mi.MiAllocator import *
-from shared.SymbolGenerator import createNewSymbol
 from syntaxTree.function.FunctionCreate import FunctionCreate
 from syntaxTree.struct.StructNode import StructNode
 
@@ -24,6 +24,8 @@ class MiGenerator(Generator):
         self.generated_code.append(self.generateInit())
 
         self.generated_code.append('JUMP start')
+
+        self.generated_code.append(self.intToIEEEFloatMethod())
 
         for definition in definitions:
             self.generate(definition, self.scope)
@@ -225,12 +227,31 @@ class MiGenerator(Generator):
                 self.generated_code.append(f'MOVE {lop} {variable.offset * 4}+!{relative_register}, -!SP')
 
     def generateBinaryOp(self, binary_op, scope):
+        type_def = TypeResolver.resolveType(binary_op, scope)
+        type_expr1 = TypeResolver.resolveType(binary_op.left, scope)
+        type_expr2 = TypeResolver.resolveType(binary_op.right, scope)
+        
         self.generate(binary_op.left, scope)
+        if (type_expr1 == 'int' and type_def == 'float') or \
+                (type_expr1 == 'int' and type_expr2 == 'float'):
+            self.generated_code.append('MOVE W !SP, -4+!SP')
+            self.generated_code.append('CLEAR W !SP')
+            self.generated_code.append("SUB W I 4, SP")
+            self.generated_code.append('CALL convertToIEEE754')
+            self.generated_code.append('ADD W I 4, SP')
+            type_expr1 = 'float'
+
         self.generate(binary_op.right, scope)
-        type_def = TypeCheck.checkType(binary_op, scope)
+        if (type_expr2 == 'int' and type_def == 'float') or \
+                (type_expr2 == 'int' and type_def == 'float'):
+            self.generated_code.append('MOVE W !SP, -4+!SP')
+            self.generated_code.append('CLEAR W !SP')
+            self.generated_code.append("SUB W I 4, SP")
+            self.generated_code.append('CALL convertToIEEE754')
+            self.generated_code.append('ADD W I 4, SP')
 
         op = binary_op.op
-        lop = self.getSpaceForType(type_def)
+        lop = self.getSpaceForType(type_expr1)
         match op:
             case '+':
                 self.generated_code.append(f'ADD {lop} !SP, 4+!SP')
@@ -321,3 +342,82 @@ heap: RES 0'''
                 return 'R12'
             case True:
                 return 'R11'
+
+    def convertIntToIEEE(self, variable):
+        return f'''
+CLEAR W -!SP
+MOVE W {variable}, -!SP
+CALL convertToIEEE754
+ADD W I 4, SP
+'''
+
+    def intToIEEEFloatMethod(self):
+        return '''
+count:
+PUSHR
+MOVE W SP, R13
+CLEAR W R0
+
+while:
+CMP W 64+!R13, I 1
+JEQ continue
+ADD W I 1, R0
+SH I -1, 64+!R13, 64+!R13
+JUMP while
+
+continue:
+MOVE W R0, 68+!R13
+
+MOVE W R13, SP
+POPR
+RET
+
+convertToIEEE754:
+PUSHR
+MOVE W SP, R13
+CLEAR W R0
+CLEAR W R1
+CLEAR W R2
+CLEAR W R3
+CLEAR W R4
+CLEAR W R5
+
+CLEAR W  -!SP
+MOVE W 64+!R13, -!SP
+CALL count
+ADD W I 4, SP
+MOVE W !SP+, R0
+
+MOVE W R0, R2
+ADD W I 127, R0
+
+CMP W 64+!R13, 0
+JGT zero
+ADD W I 1, R1
+
+zero:
+CLEAR W  -!SP
+MOVE W R0, -!SP
+CALL count
+ADD W I 4, SP
+MOVE W !SP+, R3
+ADD W I 1, R3
+SUB W R3, I 31, R3
+
+SH I 32, R1, R1
+SH R3, R0, R0
+
+ADD W I 1, R4
+SUB W R2, I 23, R4
+ADD W I 1, R5
+SH R2, R5, R5
+XOR W R5, 64+!R13, 64+!R13
+SH R4, 64+!R13, R4
+
+ADD W R0, R1, R1
+ADD W R1, R4, 68+!R13
+
+MOVE W R13, SP
+POPR
+RET
+        '''
