@@ -50,7 +50,7 @@ def checkType(ast, scope):
     if type(ast) is ArrayAssignment:
         pass
     if type(ast) is ArrayIndexing:
-        pass
+        return checkArrayIndexing(ast, scope)
     if type(ast) is StructCreate:
         return checkStructCreate(ast)
     if type(ast) is StructAssignment:
@@ -115,7 +115,21 @@ def checkReturnStatement(ast, scope):
 
 
 def checkArrayCreate(ast):
-    pass
+    return ast.type_def
+
+
+def checkArrayIndexing(ast, scope):
+    variable = scope.findData(ast.name)
+    return variable.data.type_def.replace('[]', '')
+
+
+def checkArrayAssignment(ast, scope):
+    variable = scope.findData(ast.name)
+    type_def = variable.data.type_def
+    expr_type = checkType(ast.value, scope)
+
+    if type_def != expr_type:
+        raise ValueError('Wrong type')
 
 
 def checkStruct(ast):
