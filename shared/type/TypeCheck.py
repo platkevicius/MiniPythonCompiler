@@ -6,7 +6,7 @@ from shared.struct import StructDefinitions
 from shared.variables.Variable import Variable
 from syntaxTree.arrays.ArrayAssignment import ArrayAssignment
 from syntaxTree.arrays.ArrayCreate import ArrayCreate
-from syntaxTree.arrays.ArrayIndexing import ArrayIndexing
+from syntaxTree.arrays.ArrayResolve import ArrayResolve
 from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
 from syntaxTree.expression.VariableNode import VariableNode
@@ -48,8 +48,8 @@ def checkType(ast, scope):
     if type(ast) is ArrayCreate:
         return checkArrayCreate(ast)
     if type(ast) is ArrayAssignment:
-        pass
-    if type(ast) is ArrayIndexing:
+        return checkArrayAssignment(ast, scope)
+    if type(ast) is ArrayResolve:
         return checkArrayIndexing(ast, scope)
     if type(ast) is StructCreate:
         return checkStructCreate(ast)
@@ -126,9 +126,12 @@ def checkArrayIndexing(ast, scope):
 def checkArrayAssignment(ast, scope):
     variable = scope.findData(ast.name)
     type_def = variable.data.type_def
-    expr_type = checkType(ast.value, scope)
+    expr_type = checkType(ast.value_expr, scope)
 
-    if type_def != expr_type:
+    if len(ast.index_expr) != type_def.count('['):
+        raise ValueError('Wrong dimension')
+
+    if type_def.replace('[]', '') != expr_type:
         raise ValueError('Wrong type')
 
 

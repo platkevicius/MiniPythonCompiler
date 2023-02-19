@@ -1,7 +1,7 @@
 from shared.variables.Variable import Variable
 from syntaxTree.arrays.ArrayAssignment import ArrayAssignment
 from syntaxTree.arrays.ArrayCreate import ArrayCreate
-from syntaxTree.arrays.ArrayIndexing import ArrayIndexing
+from syntaxTree.arrays.ArrayResolve import ArrayResolve
 from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
 from syntaxTree.expression.VariableNode import VariableNode
@@ -97,7 +97,7 @@ def parse_tree_to_ast(e):
 
         for i in range(1, len(e.children)):
             dimensions[i] = parse_tree_to_ast(e.children[i])
-        return ArrayIndexing(name, dimensions)
+        return ArrayResolve(name, dimensions)
     elif e.data == 'array_assignment':
         name = e.children[0]
         dimensions = {}
