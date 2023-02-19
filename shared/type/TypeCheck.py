@@ -50,7 +50,7 @@ def checkType(ast, scope):
     if type(ast) is ArrayAssignment:
         return checkArrayAssignment(ast, scope)
     if type(ast) is ArrayResolve:
-        return checkArrayIndexing(ast, scope)
+        return checkArrayResolve(ast, scope)
     if type(ast) is StructCreate:
         return checkStructCreate(ast)
     if type(ast) is StructAssignment:
@@ -118,8 +118,11 @@ def checkArrayCreate(ast):
     return ast.type_def
 
 
-def checkArrayIndexing(ast, scope):
+def checkArrayResolve(ast, scope):
     variable = scope.findData(ast.name)
+    if len(ast.dimensions) != variable.data.type_def.count('[]'):
+        raise ValueError('Wrong dimension size')
+
     return variable.data.type_def.replace('[]', '')
 
 
@@ -128,7 +131,7 @@ def checkArrayAssignment(ast, scope):
     type_def = variable.data.type_def
     expr_type = checkType(ast.value_expr, scope)
 
-    if len(ast.index_expr) != type_def.count('['):
+    if len(ast.index_expr) != type_def.count('[]'):
         raise ValueError('Wrong dimension')
 
     if type_def.replace('[]', '') != expr_type:
