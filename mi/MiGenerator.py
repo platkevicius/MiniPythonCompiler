@@ -241,6 +241,30 @@ class MiGenerator(Generator):
                 self.generated_code.append('MOVE W !SP, 4+!SP')
                 self.generated_code.append('ADD W I 4, SP')
 
+    def generateArrayResolve(self, ast, scope):
+        self.generated_code.append('MOVE W hp, R13')
+        for index in ast.index_expr:
+            self.generate(index, scope)
+            self.generated_code.append('MOVE W !SP+, !hp+')
+
+        variable = scope.findData(ast.name)
+        match variable.location:
+            case Location.REGISTER:
+                self.generated_code.append('CLEAR W -!SP')
+                self.generated_code.append('MOVE W R13, -!SP')
+                self.generated_code.append(f'MOVE W R{variable.offset}, -!SP')
+                self.generated_code.append('CALL arrayLocation')
+                self.generated_code.append('ADD W I 8, SP')
+                self.generated_code.append('MOVE W !!SP, !SP')
+            case Location.STACK:
+                relative_register = self.getRelativeRegister(scope)
+                self.generated_code.append('CLEAR W -!SP')
+                self.generated_code.append('MOVE W R13, -!SP')
+                self.generated_code.append(f'MOVE W {variable.offset * 4}+!{relative_register}, -!SP')
+                self.generated_code.append('CALL arrayLocation')
+                self.generated_code.append('ADD W I 8, SP')
+                self.generated_code.append('MOVE W !!SP, !SP')
+
     def generateVariableCreation(self, variable_creation, scope):
         name = variable_creation.name
         type_def = variable_creation.type_def

@@ -1,6 +1,7 @@
 from shared.struct import StructDefinitions
 from syntaxTree.arrays.ArrayAssignment import ArrayAssignment
 from syntaxTree.arrays.ArrayCreate import ArrayCreate
+from syntaxTree.arrays.ArrayResolve import ArrayResolve
 from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
 from syntaxTree.expression.VariableNode import VariableNode
@@ -50,6 +51,8 @@ class Generator:
             self.generateArrayCreate(ast, scope)
         if type(ast) is ArrayAssignment:
             self.generateArrayAssignment(ast, scope)
+        if type(ast) is ArrayResolve:
+            self.generateArrayResolve(ast, scope)
         if type(ast) is VariableCreation:
             self.generateVariableCreation(ast, scope)
         if type(ast) is VariableAssignment:
@@ -113,4 +116,7 @@ class Generator:
         pass
 
     def generateArrayAssignment(self, ast, scope):
+        pass
+
+    def generateArrayResolve(self, ast, scope):
         pass
