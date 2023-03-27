@@ -1,5 +1,3 @@
 var sum: int = ((1 + 1) * 4 + 10 + 5 * 10) / 2
-
 sum = 500 + 1000
-
 var compare: boolean = 5 >= 3

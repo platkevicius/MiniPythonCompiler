@@ -1,4 +1,6 @@
 from shared.struct import StructDefinitions
+from syntaxTree.arrays.ArrayAssignment import ArrayAssignment
+from syntaxTree.arrays.ArrayCreate import ArrayCreate
 from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.expression.Constant import Constant
 from syntaxTree.expression.VariableNode import VariableNode
@@ -44,6 +46,10 @@ class Generator:
             self.generateLoopStatement(ast, scope)
         if type(ast) is IfStatement:
             self.generateIfStatement(ast, scope)
+        if type(ast) is ArrayCreate:
+            self.generateArrayCreate(ast, scope)
+        if type(ast) is ArrayAssignment:
+            self.generateArrayAssignment(ast, scope)
         if type(ast) is VariableCreation:
             self.generateVariableCreation(ast, scope)
         if type(ast) is VariableAssignment:
@@ -82,6 +88,9 @@ class Generator:
     def generateIfStatement(self, ast, scope):
         pass
 
+    def generateArrayCreate(self, ast, scope):
+        pass
+
     def generateVariableCreation(self, ast, scope):
         pass
 
@@ -101,4 +110,7 @@ class Generator:
         pass
 
     def generateHeap(self):
+        pass
+
+    def generateArrayAssignment(self, ast, scope):
         pass

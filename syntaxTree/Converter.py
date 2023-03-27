@@ -89,7 +89,7 @@ def parse_tree_to_ast(e):
         dimensions = {}
 
         for i in range(1, len(e.children)):
-            dimensions[i] = parse_tree_to_ast(e.children[i])
+            dimensions[i-1] = parse_tree_to_ast(e.children[i])
         return ArrayCreate(type_def.data + ('[]'*len(dimensions)), dimensions)
     elif e.data == 'array_indexing':
         name = e.children[0]
