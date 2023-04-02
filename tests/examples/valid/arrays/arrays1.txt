@@ -1,5 +1,9 @@
-var arr: int[][][] = new int[10][10][10]
+var spans: int = 10
+var arr: int[][][] = new int[spans][10][spans]
 
-arr[3][4][1] = 100
+var indexOne: int = 8
+var indexThree: int = 3
+arr[indexOne][2][indexThree] = 100
+var integer: int = 250
 
-var res: int = arr[8][2][3]
+var res: int = (arr[8][2][3] * integer) * 2 + 5

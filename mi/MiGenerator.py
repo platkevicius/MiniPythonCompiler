@@ -190,34 +190,41 @@ class MiGenerator(Generator):
     def generateArrayCreate(self, ast, scope):
         self.generated_code.append('MOVE W hp, R13')
 
-        self.generated_code.append(f'MOVE W I {len(ast.dimensions)}, !hp+')
+        self.generated_code.append(f'ADD W I {4 * (len(ast.dimensions) + 3)}, hp')
+        self.generated_code.append(f'MOVE W I {len(ast.dimensions)}, !R13')
         binOps = []
+        counter = 1
         for i in range(len(ast.dimensions)):
             dimension = ast.dimensions[i]
             op = BinaryOp(dimension, '*', None)
-            if i == len(ast.dimensions)-2:
-                op.right = ast.dimensions[i+1]
-            if i != len(ast.dimensions)-1:
+            if i == len(ast.dimensions) - 2:
+                op.right = ast.dimensions[i + 1]
+            if i != len(ast.dimensions) - 1:
                 binOps.append(op)
             self.generate(dimension, scope)
-            self.generated_code.append('MOVE W !SP+, !hp+')
-        self.generated_code.append('MOVE W I 4, !hp+')  # TODO: lop needs to be changed
-        self.generated_code.append('ADD W I 4, hp, !hp+')  # basis address of array
-        for i in reversed(range(len(binOps)-1, 0, -1)):
+            self.generated_code.append(f'MOVE W !SP+, {4 * counter}+!R13')
+            counter += 1
+        self.generated_code.append(f'MOVE W I 4, {4 * counter}+!R13')  # TODO: lop needs to be changed
+        counter += 1
+        self.generated_code.append(f'ADD W I 4, hp, {4 * counter}+!R13')  # basis address of array todo, change to use R13!
+        for i in reversed(range(len(binOps) - 1, 0, -1)):
             op1 = binOps[i]
-            op2 = binOps[i-1]
+            op2 = binOps[i - 1]
             op2.right = op1
-            binOps[i-1] = op2
+            binOps[i - 1] = op2
 
         self.generate(binOps[0], scope)
-        self.generated_code.append('ADD W I !SP+, hp')
+        self.generated_code.append('ADD W !SP+, hp')
         self.generated_code.append('MOVE W R13, -!SP')
 
     def generateArrayAssignment(self, ast, scope):
         self.generated_code.append('MOVE W hp, R13')
+        self.generated_code.append(f'ADD W I {4 * len(ast.index_expr)}, hp')
+        counter = 0
         for index in ast.index_expr:
-            self.generate(index, scope)
-            self.generated_code.append('MOVE W !SP+, !hp+')
+            self.generate(ast.index_expr[index], scope)
+            self.generated_code.append(f'MOVE W !SP+, {4 * counter}+!R13')
+            counter += 1
 
         variable = scope.findData(ast.name)
         match variable.location:
@@ -228,7 +235,7 @@ class MiGenerator(Generator):
                 self.generated_code.append('CALL arrayLocation')
                 self.generated_code.append('ADD W I 8, SP')
                 self.generate(ast.value_expr, scope)
-                self.generated_code.append('MOVE W !SP, 4+!SP')
+                self.generated_code.append('MOVE W !SP, !(4+!SP)')
                 self.generated_code.append('ADD W I 4, SP')
             case Location.STACK:
                 relative_register = self.getRelativeRegister(scope)
@@ -238,14 +245,17 @@ class MiGenerator(Generator):
                 self.generated_code.append('CALL arrayLocation')
                 self.generated_code.append('ADD W I 8, SP')
                 self.generate(ast.value_expr, scope)
-                self.generated_code.append('MOVE W !SP, 4+!SP')
+                self.generated_code.append('MOVE W !SP, !(4+!SP)')
                 self.generated_code.append('ADD W I 4, SP')
 
     def generateArrayResolve(self, ast, scope):
         self.generated_code.append('MOVE W hp, R13')
-        for index in ast.index_expr:
-            self.generate(index, scope)
-            self.generated_code.append('MOVE W !SP+, !hp+')
+        self.generated_code.append(f'ADD W I {4 * len(ast.dimensions)}, hp')
+        counter = 0
+        for index in ast.dimensions:
+            self.generate(ast.dimensions[index], scope)
+            self.generated_code.append(f'MOVE W !SP+, {4 * counter}+!R13')
+            counter += 1
 
         variable = scope.findData(ast.name)
         match variable.location:
@@ -495,30 +505,27 @@ RET
 '''
 
     def arrayIndexLocation(self):
-        return
-'''
+        return '''
 arrayLocation:
-	PUSHR
-	MOVE W SP, R13
-	CLEAR W R0
-	MOVE W 64+!R13, R1
-	MOVE W 68+!R13, R2
-	MOVE W !R1+, R3
+PUSHR
+MOVE W SP, R13
+CLEAR W R0
+MOVE W 64+!R13, R1
+MOVE W 68+!R13, R2
+MOVE W !R1+, R3
 loop:
-	MOVE W !R2+, R4
-	SUB W !R1+, R4
-	JLT error
-	CMP W !R1, R4
-	JLE error
-	MULT W !R1+, R0
-	ADD W R4, R0
-	SUB W I 1, R3
-	JGT loop
+MOVE W !R2+, R4
+CMP W !R1, R4
+JLE error
+MULT W !R1+, R0	
+ADD W R4, R0
+SUB W I 1, R3
+JGT loop
 endloop:
-	MULT W !R1+, R0
-	ADD W !R1+, R0
-	MOVE W R0, 72+!R13
-	MOVE W R13, SP
-	POPR
-	RET
+MULT W !R1+, R0
+ADD W !R1+, R0
+MOVE W R0, 72+!R13
+MOVE W R13, SP
+POPR
+RET
 '''
