@@ -528,4 +528,6 @@ MOVE W R0, 72+!R13
 MOVE W R13, SP
 POPR
 RET
+error:
+HALT
 '''

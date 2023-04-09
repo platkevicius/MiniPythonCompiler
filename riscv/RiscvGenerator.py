@@ -10,6 +10,7 @@ from shared.struct import StructDefinitions
 from shared.type import TypeResolver
 from shared.variables.Variable import Variable
 from shared.SymbolGenerator import createNewSymbol
+from syntaxTree.expression.BinaryOp import BinaryOp
 from syntaxTree.function.FunctionCreate import FunctionCreate
 from syntaxTree.struct.StructNode import StructNode
 
@@ -29,6 +30,8 @@ class RiscvGenerator(Generator):
         self.generated_code.append(self.generateInit())
 
         self.generated_code.append('j start')
+
+        self.generated_code.append(self.arrayIndexLocation())
 
         for definition in definitions:
             self.generate(definition, self.scope)
@@ -163,15 +166,15 @@ class RiscvGenerator(Generator):
         self.generated_code.append('jr ra')
 
     def generateStructCreate(self, struct):
-        self.generated_code.append('mv t0, t6')
+        self.generated_code.append('mv t0, gp')
 
         offset = 0
         for definition in StructDefinitions.findDefinition(struct.name):
             offset += StructDefinitions.getOffsetForType(definition.type_def)
 
-        self.generated_code.append(f'addi t6, t6, {offset}')
+        self.generated_code.append(f'addi gp, gp, {offset}')
         self.generated_code.append('addi sp, sp, -4')
-        self.generated_code.append('sw t6, 0(sp)')
+        self.generated_code.append('sw gp, 0(sp)')
 
     def generateStructAssignment(self, struct, scope):
         variable = scope.findData(struct.name)
@@ -275,6 +278,104 @@ class RiscvGenerator(Generator):
         self.generated_code.append('')  # formatting
         self.generated_code.append(f'{continue_symbol}:')
         self.generated_code.append(f'addi sp, sp, {local_variable_offset}')  # reset Stack Pointer
+
+    def generateArrayCreate(self, ast, scope):
+        self.generated_code.append('mv t5, gp')
+
+        self.generated_code.append(f'addi gp, gp, {4 * (len(ast.dimensions) + 3)}')
+        self.generated_code.append(f'addi t4, zero, {len(ast.dimensions)}')
+        self.generated_code.append(f'sw t4, 0(t5)')
+        binOps = []
+        counter = 1
+        for i in range(len(ast.dimensions)):
+            dimension = ast.dimensions[i]
+            op = BinaryOp(dimension, '*', None)
+            if i == len(ast.dimensions) - 2:
+                op.right = ast.dimensions[i + 1]
+            if i != len(ast.dimensions) - 1:
+                binOps.append(op)
+            self.generate(dimension, scope)
+            self.generated_code.append(f'lw t4, 0(sp)')
+            self.generated_code.append('addi sp, sp, 4')
+            self.generated_code.append(f'sw t4, {4 * counter}(t5)')
+            counter += 1
+        self.generated_code.append('addi t4, zero, 4')
+        self.generated_code.append(f'sw t4, {4 * counter}(t5)')  # TODO: lop needs to be changed
+        counter += 1
+        self.generated_code.append('addi t4, gp, 4')
+        self.generated_code.append(f'sw t4, {4 * counter}(t5)')  # basis address of array todo, change to use R13!
+        for i in reversed(range(len(binOps) - 1, 0, -1)):
+            op1 = binOps[i]
+            op2 = binOps[i - 1]
+            op2.right = op1
+            binOps[i - 1] = op2
+
+        self.generate(binOps[0], scope)
+        self.generated_code.append(f'lw t4, 0(sp)')
+        self.generated_code.append('addi sp, sp, 4')
+        self.generated_code.append('add gp, gp, t4')
+        self.generated_code.append('addi sp, sp, -4')
+        self.generated_code.append('sw t5, 0(sp)')
+
+    def generateArrayAssignment(self, ast, scope):
+        self.generated_code.append('mv t5, gp')
+        self.generated_code.append(f'addi gp, gp, {4 * (len(ast.index_expr))}')
+        counter = 0
+        for index in ast.index_expr:
+            self.generate(ast.index_expr[index], scope)
+            self.generated_code.append(f'lw t4, 0(sp)')
+            self.generated_code.append('addi sp, sp, 4')
+            self.generated_code.append(f'sw t4, {4 * counter}(t5)')
+            counter += 1
+
+        variable = scope.findData(ast.name)
+        match variable.location:
+            case Location.REGISTER:
+                self.generated_code.append('mv a2, t5')
+                self.generated_code.append(f'mv a1, s{variable.offset}')
+                self.generated_code.append('jal arrayLocation')
+                self.generate(ast.value_expr, scope)
+                self.generated_code.append('lw t4, 0(sp)')
+                self.generated_code.append('addi sp, sp, 4')
+                self.generated_code.append('sw t4, 0(a0)')
+            case Location.STACK:
+                relative_register = self.getRelativeRegister(scope, Location.STACK)
+                self.generated_code.append('mv a2, t5')
+                self.generated_code.append(f'lw a1, {variable.offset * 4}({relative_register})')
+                self.generated_code.append('jal arrayLocation')
+                self.generate(ast.value_expr, scope)
+                self.generated_code.append('lw t4, 0(sp)')
+                self.generated_code.append('addi sp, sp, 4')
+                self.generated_code.append('sw t4, 0(a0)')
+
+    def generateArrayResolve(self, ast, scope):
+        self.generated_code.append('mv t5, gp')
+        self.generated_code.append(f'addi gp, gp, {4 * (len(ast.dimensions))}')
+        counter = 0
+        for index in ast.dimensions:
+            self.generate(ast.dimensions[index], scope)
+            self.generated_code.append(f'lw t4, 0(sp)')
+            self.generated_code.append(f'sw t4, {4 * counter}(t5)')
+            self.generated_code.append('addi sp, sp, 4')
+            counter += 1
+
+        variable = scope.findData(ast.name)
+        match variable.location:
+            case Location.REGISTER:
+                self.generated_code.append('mv a2, t5')
+                self.generated_code.append(f'mv a1, s{variable.offset}')
+                self.generated_code.append('jal arrayLocation')
+                self.generated_code.append('addi, sp, sp, -4')
+                self.generated_code.append('lw t4, 0(a0)')
+                self.generated_code.append('sw t4, 0(sp)')
+            case Location.STACK:
+                relative_register = self.getRelativeRegister(scope, Location.STACK)
+                self.generated_code.append('mv a2, t5')
+                self.generated_code.append(f'lw a1, {variable.offset * 4}({relative_register})')
+                self.generated_code.append('jal arrayLocation')
+                self.generated_code.append('addi, sp, sp, -4')
+                self.generated_code.append('lw t4, 0(a0)')
+                self.generated_code.append('sw t4, 0(sp)')
 
     def generateVariableCreation(self, variable_creation, scope):
         name = variable_creation.name
@@ -494,7 +595,6 @@ class RiscvGenerator(Generator):
     
 __start:
 mv fp, sp
-mv t6, gp     
     '''
 
     def generateHeap(self):
@@ -532,3 +632,35 @@ mv t6, gp
     def float_to_hex(self, num):
         bits, = struct.unpack('!I', struct.pack('!f', num))
         return hex(int("{:032b}".format(bits), 2))
+
+    def arrayIndexLocation(self):
+        return '''
+arrayLocation:
+mv t0, zero
+mv t1, a1
+mv t2, a2
+lw t3, 0(t1)
+addi t1, t1, 4
+loop:
+lw t4, 0(t2)
+addi, t2, t2, 4
+lw t5, 0(t1)
+addi t1, t1, 4
+ble t5, t4, error
+mul t0, t0, t5
+add t0, t0, t4
+addi t3, t3, -1
+blt zero, t3, loop
+endloop:
+lw t5, 0(t1)
+addi t1, t1, 4
+mul t0, t0, t5
+lw t5, 0(t1)
+addi t1, t1, 4
+add t0, t0, t5
+mv a0, t0
+jr ra
+error:
+li a7, 10
+ecall
+'''
