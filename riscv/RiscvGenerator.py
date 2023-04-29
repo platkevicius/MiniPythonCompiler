@@ -170,7 +170,7 @@ class RiscvGenerator(Generator):
 
         offset = 0
         for definition in StructDefinitions.findDefinition(struct.name):
-            offset += StructDefinitions.getOffsetForType(definition.type_def)
+            offset += 4
 
         self.generated_code.append(f'addi gp, gp, {offset}')
         self.generated_code.append('addi sp, sp, -4')

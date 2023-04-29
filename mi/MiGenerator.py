@@ -69,7 +69,7 @@ class MiGenerator(Generator):
         # free space for type
         if function.return_type is not None:
             lop = self.getSpaceForType(function.return_type)
-            self.generated_code.append(f'CLEAR {lop} -!SP')  # todo: type needs to be added
+            self.generated_code.append(f'CLEAR {lop} -!SP')
 
         for i in range(len(function.params) - 1, -1, -1):
             expr = ast.params[i]
@@ -204,9 +204,9 @@ class MiGenerator(Generator):
             self.generate(dimension, scope)
             self.generated_code.append(f'MOVE W !SP+, {4 * counter}+!R13')
             counter += 1
-        self.generated_code.append(f'MOVE W I 4, {4 * counter}+!R13')  # TODO: lop needs to be changed
+        self.generated_code.append(f'MOVE W I 4, {4 * counter}+!R13')
         counter += 1
-        self.generated_code.append(f'ADD W I 4, hp, {4 * counter}+!R13')  # basis address of array todo, change to use R13!
+        self.generated_code.append(f'ADD W I 4, hp, {4 * counter}+!R13')
         for i in reversed(range(len(binOps) - 1, 0, -1)):
             op1 = binOps[i]
             op2 = binOps[i - 1]
